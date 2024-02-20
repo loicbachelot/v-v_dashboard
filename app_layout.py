@@ -1,9 +1,11 @@
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
+import glob
 
 
-def get_main_page(list_datasets):
+def get_main_page():
+    init_list_datasets = glob.glob("./resources/*/*.dat")
     return html.Div(
         id="root",
         children=[
@@ -12,7 +14,7 @@ def get_main_page(list_datasets):
                     dbc.Label("Choose what to display"),
                     dcc.Dropdown(
                         id='dataset-choice',
-                        options=[{"label": label, "value": label} for label in list_datasets],
+                        options=init_list_datasets,
                         multi=True,
                         value=[],
                     )
