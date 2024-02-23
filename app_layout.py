@@ -48,8 +48,13 @@ def get_main_page():
                                                             options=init_list_datasets,
                                                             value=[],
                                                         ),
-                                                        dcc.Upload(dbc.Button('Upload File')),
-                                                        dbc.Button('See upload documentation')
+                                                        dcc.Upload(id='upload-data',
+                                                                   children=[dbc.Button('Upload File')],
+                                                                   multiple=False,
+                                                                   style={'margin': '10px'}),
+                                                        dbc.Button('See upload documentation', id="upload-doc", style={'margin': '10px'}),
+                                                        html.Div([html.H5("Uploaded file:"),
+                                                                  html.P(id="upload-filename")])
                                                     ],
                                                 ),
                                             ),
@@ -61,7 +66,9 @@ def get_main_page():
                                                             dbc.Label("Choose the depth"),
                                                             dbc.Checklist(
                                                                 id='depth-selector',
-                                                                options=[str(i).zfill(3) for i in range(0, 351, 25)],
+                                                                options=["000", "025", "050", "075", "100",
+                                                                         "125", "150", "175", "200",
+                                                                         "250", "350"],
                                                                 value=[],
                                                             ),
                                                             dbc.Row(
@@ -97,7 +104,7 @@ def get_main_page():
                                         id='time-series-graph',
                                         style={'responsive': True,
                                                'width': '100%',
-                                               'height': '100%'},
+                                               'height': '90vh'},
                                         animate=False,
                                         config={"displayModeBar": True,
                                                 "displaylogo": False,
@@ -110,12 +117,6 @@ def get_main_page():
                                 width=9)
                         ])
                 ]),
-            # invisible div to trigger the updates on change of dataset
-            html.Div([
-                dcc.Input(
-                    id='dataset-update',
-                    value=0,
-                )
-            ], style={'display': 'none'}
-            )
+            # stor user's dataset
+            dcc.Store(id='dataset-value')
         ])
