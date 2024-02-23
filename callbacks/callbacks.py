@@ -1,30 +1,46 @@
-import sys
 import dash
 import pandas as pd
-import glob
-import callbacks.config as config
+import os
 from callbacks.plots import main_plot
-from callbacks.utils import get_df, get_ds_in_folder
+from callbacks.utils import get_df, get_upload_df
 
 
 def get_callbacks(app):
-    @app.callback(dash.dependencies.Output('graph', 'figure'),
-                  dash.dependencies.Input('dataset-update', "value")
+    @app.callback(dash.dependencies.Output('time-series-graph', 'figure'),
+                  dash.dependencies.Input('dataset-value', "data")
                   )
-    def display_accuracy(ds_update):
-        return main_plot(config.df)
+    def display_timeseries(ds_update):
+        return main_plot(pd.read_json(ds_update, orient='split'))
 
-    @app.callback(dash.dependencies.Output('dataset-update', 'value'),
-                  dash.dependencies.Input('dataset-choice', "value")
+    @app.callback(dash.dependencies.Output('dataset-value', 'data'),
+                  [dash.dependencies.Input('dataset-choice', "value"),
+                   dash.dependencies.Input('depth-selector', "value"),
+                   dash.dependencies.Input('upload-data', "contents")],
+                  dash.dependencies.State('upload-data', 'filename'),
                   )
-    def update_dataset(dataset_change):
-        get_df(dataset_change)
+    def update_dataset(dataset_list, depth, upload_data, filename):
+        selected_df = get_df(dataset_list, depth)
+        upload_df = get_upload_df(upload_data, filename)
+        if upload_df is not None:
+            if selected_df is not None:
+                return pd.concat([upload_df, selected_df]).to_json(date_format='iso', orient='split')
+            else:
+                return upload_df.to_json(date_format='iso', orient='split')
+        elif selected_df is not None:
+            return selected_df.to_json(date_format='iso', orient='split')
+        else:
+            return pd.DataFrame().to_json(date_format='iso', orient='split')
+
+    @app.callback(dash.dependencies.Output('upload-filename', 'children'),
+                  dash.dependencies.Input('upload-data', 'contents'),
+                  dash.dependencies.State('upload-data', 'filename'))
+    def print_upload_filename(upload_data, filename):
+        return filename
 
     @app.callback(
         dash.dependencies.Output('dataset-choice', 'options'),
         [dash.dependencies.Input('dataset-choice', 'value')]
     )
-    def update_dropdown(selected_file):
-        # Get updated list of CSV files in the folder
-        updated_options = get_ds_in_folder("./resources")
+    def update_dataset_selection(selected_file):
+        updated_options = os.listdir("./resources/bp1-qd")
         return updated_options
