@@ -12,7 +12,7 @@ def main_plot(df):
         color_mapping = generate_color_mapping(datasets)
         fig = make_subplots(rows=2, cols=2, shared_xaxes=True,
                             subplot_titles=['Slip', 'Slip Rate', 'Shear Stress', 'State'],
-                            vertical_spacing=0.08, horizontal_spacing=0.05)
+                            vertical_spacing=0.08, horizontal_spacing=0.1)
         for dataset_name, group in df.groupby('dataset_name'):
             color = color_mapping[dataset_name]
 
@@ -20,15 +20,20 @@ def main_plot(df):
             fig.add_trace(go.Scatter(x=group['years'], y=group['slip'], mode='lines', legendgroup=dataset_name,
                                      line=dict(color=color), name=dataset_name), row=1, col=1)
             fig.add_trace(go.Scatter(x=group['years'], y=group['slip_rate'], mode='lines', legendgroup=dataset_name,
-                                     line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=1)
-            fig.add_trace(go.Scatter(x=group['years'], y=group['shear_stress'], mode='lines', legendgroup=dataset_name,
                                      line=dict(color=color), name=dataset_name, showlegend=False), row=1, col=2)
+            fig.add_trace(go.Scatter(x=group['years'], y=group['shear_stress'], mode='lines', legendgroup=dataset_name,
+                                     line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=1)
             fig.add_trace(go.Scatter(x=group['years'], y=group['state'], mode='lines', legendgroup=dataset_name,
                                      line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=2)
 
         # Update layout
         fig.update_layout(title='Variables over Time', showlegend=True)
         fig.update_xaxes(title_text='Years', matches='x')
+        fig.update_yaxes(title_text="Slip (m)", row=1, col=1)
+        fig.update_yaxes(title_text="Slip rate (log10 m/s)", row=1, col=2)
+        fig.update_yaxes(title_text="Shear stress (MPa)", row=2, col=1)
+        fig.update_yaxes(title_text="State (log10 s)", row=2, col=2)
+
     except Exception as e:
         fig = make_subplots(rows=2, cols=2, shared_xaxes=True,
                             subplot_titles=['Slip', 'Slip Rate', 'Shear Stress', 'State'],
