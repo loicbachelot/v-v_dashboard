@@ -3,7 +3,7 @@ from plotly.subplots import make_subplots
 from callbacks.utils import generate_color_mapping
 
 
-def main_plot(df):
+def main_plot(df, year_start, year_end):
     try:
         # Get unique datasets in the file
         datasets = df['dataset_name'].unique()
@@ -27,12 +27,12 @@ def main_plot(df):
                                      line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=2)
 
         # Update layout
-        fig.update_layout(title='Variables over Time', showlegend=True)
         fig.update_xaxes(title_text='Years', matches='x')
         fig.update_yaxes(title_text="Slip (m)", row=1, col=1)
         fig.update_yaxes(title_text="Slip rate (log10 m/s)", row=1, col=2)
         fig.update_yaxes(title_text="Shear stress (MPa)", row=2, col=1)
         fig.update_yaxes(title_text="State (log10 s)", row=2, col=2)
+        fig.update_layout(title='Variables over Time', showlegend=True, xaxis=dict(range=[year_start, year_end]))
 
     except Exception as e:
         fig = make_subplots(rows=2, cols=2, shared_xaxes=True,

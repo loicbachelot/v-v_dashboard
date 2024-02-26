@@ -7,10 +7,19 @@ from callbacks.utils import get_df, get_upload_df
 
 def get_callbacks(app):
     @app.callback(dash.dependencies.Output('time-series-graph', 'figure'),
-                  dash.dependencies.Input('dataset-value', "data")
+                  dash.dependencies.Input('dataset-value', 'data'),
+                  dash.dependencies.Input('submit-button', 'n_clicks'),
+                  dash.dependencies.State('year-start', 'value'),
+                  dash.dependencies.State('year-end', 'value')
                   )
-    def display_timeseries(ds_update):
-        return main_plot(pd.read_json(ds_update, orient='split'))
+    def display_timeseries(ds_update, click, year_start, year_end):
+        start = 0
+        end = 3000
+        if year_start is not None and year_end is not None:
+            if 0 < year_start < year_end < 3000:
+                start = year_start
+                end = year_end
+        return main_plot(pd.read_json(ds_update, orient='split'), start, end)
 
     @app.callback(dash.dependencies.Output('dataset-value', 'data'),
                   [dash.dependencies.Input('dataset-choice', "value"),

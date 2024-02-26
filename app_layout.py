@@ -52,7 +52,8 @@ def get_main_page():
                                                                    children=[dbc.Button('Upload File')],
                                                                    multiple=False,
                                                                    style={'margin': '10px'}),
-                                                        dbc.Button('See upload documentation', id="upload-doc", style={'margin': '10px'}),
+                                                        dbc.Button('See upload documentation', id="upload-doc",
+                                                                   style={'margin': '10px'}),
                                                         html.Div([html.H5("Uploaded file:"),
                                                                   html.P(id="upload-filename")])
                                                     ],
@@ -77,10 +78,14 @@ def get_main_page():
                                                                         "Choose the period to display (in years)"),
                                                                     dbc.Input(type="number", min=0, max=3000, step=1,
                                                                               id="year-start", placeholder="start",
-                                                                              style={'marginRight': '10px'}),
+                                                                              style={'marginBottom': '10px',
+                                                                                     'marginLeft': '10px'}),
                                                                     dbc.Input(type="number", min=0, max=3000, step=1,
-                                                                              id="year-end", placeholder="end")
-                                                                ],
+                                                                              id="year-end", placeholder="end",
+                                                                              style={'marginBottom': '10px',
+                                                                                     'marginLeft': '10px'}
+                                                                              )
+                                                                ]
                                                             ),
                                                             dbc.Row(
                                                                 children=[
@@ -88,8 +93,11 @@ def get_main_page():
                                                                                id='submit-button',
                                                                                n_clicks=0,
                                                                                color="primary",
+                                                                               style={'marginBottom': '10px',
+                                                                                      'marginLeft': '10px'}
+
                                                                                ),
-                                                                ]
+                                                                ],
                                                             )
                                                         ]
                                                     ), ]),
