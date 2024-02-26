@@ -27,7 +27,7 @@ def main_plot(df, year_start, year_end):
                                      line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=2)
 
         # Update layout
-        fig.update_xaxes(title_text='Years', matches='x')
+        fig.update_xaxes(title_text='Years', matches='x', row=2)
         fig.update_yaxes(title_text="Slip (m)", row=1, col=1)
         fig.update_yaxes(title_text="Slip rate (log10 m/s)", row=1, col=2)
         fig.update_yaxes(title_text="Shear stress (MPa)", row=2, col=1)
