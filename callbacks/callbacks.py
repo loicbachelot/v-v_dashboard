@@ -19,15 +19,15 @@ def get_callbacks(app):
                   dash.dependencies.State('upload-data', 'filename'),
                   )
     def update_dataset(dataset_list, depth, upload_data, filename):
+        list_df = []
         selected_df = get_df(dataset_list, depth)
         upload_df = get_upload_df(upload_data, filename)
         if upload_df is not None:
-            if selected_df is not None:
-                return pd.concat([upload_df, selected_df]).to_json(date_format='iso', orient='split')
-            else:
-                return upload_df.to_json(date_format='iso', orient='split')
-        elif selected_df is not None:
-            return selected_df.to_json(date_format='iso', orient='split')
+            list_df.append(upload_df)
+        if selected_df is not None:
+            list_df.append(selected_df)
+        if len(list_df) > 0:
+            return pd.concat(list_df).to_json(date_format='iso', orient='split')
         else:
             return pd.DataFrame().to_json(date_format='iso', orient='split')
 
