@@ -26,7 +26,7 @@ def get_main_page():
                         width={"size": 4, "offset": 0}
                     ),
                 ],
-                color="dark",
+                color="#26505A",
                 dark=True,
                 style={
                     'marginBottom': '1rem',
@@ -56,12 +56,12 @@ def get_main_page():
                                                             value=[],
                                                         ),
                                                         dcc.Upload(id='upload-data',
-                                                                   children=[dbc.Button('Upload File')],
+                                                                   children=[dbc.Button('Upload File', color="secondary")],
                                                                    multiple=False,
                                                                    style={'margin': '10px'}),
                                                         dbc.Button('See upload documentation', id="upload-doc",
-                                                                   style={'margin': '10px'}),
-                                                        html.Div([html.H5("Uploaded file:"),
+                                                                   color="secondary", style={'margin': '10px'}),
+                                                        html.Div([html.H5("Uploaded file:", style={'color': '#000000'}),
                                                                   html.P(id="upload-filename")])
                                                     ],
                                                 ),
