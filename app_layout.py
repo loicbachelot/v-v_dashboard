@@ -12,11 +12,18 @@ def get_main_page():
             dbc.Navbar(
                 [
                     dbc.Col(
+                        html.A(href="https://cascadiaquakes.org/", children=[
+                            html.Img(
+                                src=r'https://cascadiaquakes.org/wp-content/uploads/2023/10/Crescent-Logos-Horizontal-White-230x62.png'),
+                        ]),
+                        width={"size": 4, "offset": 1},
+                    ),
+                    dbc.Col(
                         html.H1("V&V Dashboard", style={
                             'textAlign': 'center',
                             'color': 'white'
                         }),
-                        width={"size": 6, "offset": 2}
+                        width={"size": 4, "offset": 0}
                     ),
                 ],
                 color="dark",
