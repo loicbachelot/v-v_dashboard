@@ -1,9 +1,8 @@
 import base64
 import io
-
-import callbacks.config as config
 import pandas as pd
 import glob
+import plotly.express as px
 
 
 def convert_seconds_to_time(seconds):
@@ -50,7 +49,7 @@ def get_df(list_df, depth_list):
 
 def generate_color_mapping(datasets):
     color_mapping = {}
-    colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan']  # You can add more colors as needed
+    colors = px.colors.qualitative.D3
     for i, dataset in enumerate(datasets):
         color_mapping[dataset] = colors[i % len(colors)]
     return color_mapping
