@@ -93,6 +93,18 @@ def get_main_page():
                                                         dbc.Row(
                                                             children=[
                                                                 dbc.Col(children=[
+                                                                    dbc.Label("Choose x axis variable"),
+                                                                    dbc.Select(
+                                                                        id="xaxis-var",
+                                                                        options=[
+                                                                            {"label": "Time", "value": "time"},
+                                                                            {"label": "Slip", "value": "slip"},
+                                                                            {"label": "Slip Rate", "value": "slip_rate"},
+                                                                            {"label": "Shear Stress", "value": "shear_stress"},
+                                                                            {"label": "State", "value": "state"}
+                                                                        ],
+                                                                        value="time"
+                                                                    ),
                                                                     dbc.Label("time unit"),
                                                                     dbc.Select(
                                                                         id="time-unit",

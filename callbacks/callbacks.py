@@ -11,16 +11,19 @@ def get_callbacks(app):
                   dash.dependencies.Input('submit-button', 'n_clicks'),
                   dash.dependencies.State('year-start', 'value'),
                   dash.dependencies.State('year-end', 'value'),
-                  dash.dependencies.State('time-unit', 'value')
+                  dash.dependencies.State('time-unit', 'value'),
+                  dash.dependencies.State('xaxis-var', 'value')
                   )
-    def display_timeseries(ds_update, click, year_start, year_end, time_unit):
+    def display_timeseries(ds_update, click, year_start, year_end, time_unit, xaxis_var):
         start = 0
         end = 3000
         if year_start is not None and year_end is not None:
             if 0 < year_start < year_end < 3000:
                 start = year_start
                 end = year_end
-        return main_plot(pd.read_json(ds_update, orient='split'), start, end, time_unit)
+        if xaxis_var == 'time':
+            xaxis_var = time_unit
+        return main_plot(pd.read_json(ds_update, orient='split'), start, end, xaxis_var)
 
     @app.callback(dash.dependencies.Output('dataset-value', 'data'),
                   [dash.dependencies.Input('dataset-choice', "value"),
