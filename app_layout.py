@@ -47,29 +47,18 @@ def get_main_page():
                                     dcc.Tabs(id="tabs-example-graph", value='tab-dataset', children=[
                                         dcc.Tab(label='Dataset selection', value='tab-dataset', children=[
                                             dbc.Row(
-                                                dbc.Col(
-                                                    children=[
-                                                        dbc.Label("Dataset choice"),
-                                                        dbc.Checklist(
-                                                            id='dataset-choice',
-                                                            options=init_list_datasets,
-                                                            value=[],
-                                                        ),
-                                                        dcc.Upload(id='upload-data',
-                                                                   children=[dbc.Button('Upload File', color="secondary")],
-                                                                   multiple=False,
-                                                                   style={'margin': '10px'}),
-                                                        dbc.Button('See upload documentation', id="upload-doc",
-                                                                   color="secondary", style={'margin': '10px'}),
-                                                        html.Div([html.H5("Uploaded file:", style={'color': '#000000'}),
-                                                                  html.P(id="upload-filename")])
-                                                    ],
-                                                ),
-                                            ),
-                                        ]),
-                                        dcc.Tab(label='Graph control', value='tab-graphcontrol',
                                                 children=[
-                                                    dbc.Row(
+                                                    dbc.Col(
+                                                        children=[
+                                                            dbc.Label("Dataset choice"),
+                                                            dbc.Checklist(
+                                                                id='dataset-choice',
+                                                                options=init_list_datasets,
+                                                                value=[],
+                                                            ),
+                                                        ],
+                                                    ),
+                                                    dbc.Col(
                                                         children=[
                                                             dbc.Label("Choose the depth"),
                                                             dbc.Checklist(
@@ -79,10 +68,56 @@ def get_main_page():
                                                                          "250", "350"],
                                                                 value=[],
                                                             ),
-                                                            dbc.Row(
-                                                                children=[
+                                                        ],
+                                                    ),
+                                                ]
+                                            ),
+                                            dbc.Row(
+                                                children=[
+                                                    dbc.Col(children=[
+                                                        dcc.Upload(id='upload-data',
+                                                                   children=[dbc.Button('Upload File', color="secondary")],
+                                                                   multiple=False,
+                                                                   style={'margin': '10px'}),
+                                                        dbc.Button('Upload documentation', id="upload-doc",
+                                                                   color="secondary", style={'margin': '10px'}),
+                                                        html.Div([html.H5("Uploaded file:", style={'color': '#000000'}),
+                                                                  html.P(id="upload-filename")])
+                                                        ]
+                                                    )
+                                                ]
+                                            ),
+                                        ]),
+                                        dcc.Tab(label='Graph control', value='tab-graphcontrol',
+                                                children=[
+                                                        dbc.Row(
+                                                            children=[
+                                                                dbc.Col(children=[
+                                                                    dbc.Label("Choose x axis variable"),
+                                                                    dbc.Select(
+                                                                        id="xaxis-var",
+                                                                        options=[
+                                                                            {"label": "Time", "value": "time"},
+                                                                            {"label": "Slip", "value": "slip"},
+                                                                            {"label": "Slip Rate", "value": "slip_rate"},
+                                                                            {"label": "Shear Stress", "value": "shear_stress"},
+                                                                            {"label": "State", "value": "state"}
+                                                                        ],
+                                                                        value="time"
+                                                                    ),
+                                                                    dbc.Label("time unit"),
+                                                                    dbc.Select(
+                                                                        id="time-unit",
+                                                                        options=[
+                                                                            {"label": "year", "value": "years"},
+                                                                            {"label": "days", "value": "days"},
+                                                                            {"label": "hours", "value": "hours"},
+                                                                            {"label": "seconds", "value": "seconds"}
+                                                                        ],
+                                                                        value="years"
+                                                                    ),
                                                                     dbc.Label(
-                                                                        "Choose the period to display (in years)"),
+                                                                        "Choose the period to display in years"),
                                                                     dbc.Input(type="number", min=0, max=3000, step=1,
                                                                               id="year-start", placeholder="start",
                                                                               style={'marginBottom': '10px',
@@ -91,11 +126,7 @@ def get_main_page():
                                                                               id="year-end", placeholder="end",
                                                                               style={'marginBottom': '10px',
                                                                                      'marginLeft': '10px'}
-                                                                              )
-                                                                ]
-                                                            ),
-                                                            dbc.Row(
-                                                                children=[
+                                                                              ),
                                                                     dbc.Button("submit",
                                                                                id='submit-button',
                                                                                n_clicks=0,
@@ -104,11 +135,14 @@ def get_main_page():
                                                                                       'marginLeft': '10px'}
 
                                                                                ),
-                                                                ],
-                                                            )
-                                                        ]
-                                                    ), ]),
-                                    ]),
+                                                                    ]
+                                                                )
+                                                            ],
+                                                        )
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
                                 ],
                                 align="start",
                                 width=3,

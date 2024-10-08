@@ -3,7 +3,7 @@ from plotly.subplots import make_subplots
 from callbacks.utils import generate_color_mapping
 
 
-def main_plot(df, year_start, year_end):
+def main_plot(df, year_start, year_end, x_unit='years'):
     try:
         # Get unique datasets in the file
         datasets = df['dataset_name'].unique()
@@ -17,22 +17,39 @@ def main_plot(df, year_start, year_end):
             color = color_mapping[dataset_name]
 
             # Add traces for each variable
-            fig.add_trace(go.Scatter(x=group['years'], y=group['slip'], mode='lines', legendgroup=dataset_name,
+            fig.add_trace(go.Scatter(x=group[x_unit], y=group['slip'], mode='lines', legendgroup=dataset_name,
                                      line=dict(color=color), name=dataset_name), row=1, col=1)
-            fig.add_trace(go.Scatter(x=group['years'], y=group['slip_rate'], mode='lines', legendgroup=dataset_name,
+            fig.add_trace(go.Scatter(x=group[x_unit], y=group['slip_rate'], mode='lines', legendgroup=dataset_name,
                                      line=dict(color=color), name=dataset_name, showlegend=False), row=1, col=2)
-            fig.add_trace(go.Scatter(x=group['years'], y=group['shear_stress'], mode='lines', legendgroup=dataset_name,
-                                     line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=1)
-            fig.add_trace(go.Scatter(x=group['years'], y=group['state'], mode='lines', legendgroup=dataset_name,
+            fig.add_trace(
+                go.Scatter(x=group[x_unit], y=group['shear_stress'], mode='lines', legendgroup=dataset_name,
+                           line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=1)
+            fig.add_trace(go.Scatter(x=group[x_unit], y=group['state'], mode='lines', legendgroup=dataset_name,
                                      line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=2)
 
         # Update layout
-        fig.update_xaxes(title_text='Years', matches='x', row=2)
+        fig.update_xaxes(title_text=x_unit, matches='x', row=2)
         fig.update_yaxes(title_text="Slip (m)", row=1, col=1)
         fig.update_yaxes(title_text="Slip rate (log10 m/s)", row=1, col=2)
         fig.update_yaxes(title_text="Shear stress (MPa)", row=2, col=1)
         fig.update_yaxes(title_text="State (log10 s)", row=2, col=2)
-        fig.update_layout(title='Variables over Time', showlegend=True, xaxis=dict(range=[year_start, year_end]))
+
+        if x_unit == 'seconds':
+            time_start = year_start * 60 * 60 * 24 * 365
+            time_end = year_end * 60 * 60 * 24 * 365
+        elif x_unit == 'hours':
+            time_start = year_start * 24 * 365
+            time_end = year_end * 24 * 365
+        elif x_unit == 'days':
+            time_start = year_start * 365
+            time_end = year_end * 365
+        elif x_unit == 'years':
+            time_start = year_start
+            time_end = year_end
+        else:
+            time_start = group[x_unit].min()
+            time_end = group[x_unit].max()
+        fig.update_layout(title=f'Variables over {x_unit}', showlegend=True, xaxis=dict(range=[time_start, time_end]))
 
     except Exception as e:
         fig = make_subplots(rows=2, cols=2, shared_xaxes=True,
