@@ -15,6 +15,20 @@ def get_callbacks(app):
                   dash.dependencies.State('xaxis-var', 'value')
                   )
     def display_timeseries(ds_update, click, year_start, year_end, time_unit, xaxis_var):
+        """
+        Update the time-series graph based on user inputs.
+
+        Parameters:
+        ds_update (str): JSON string of the dataset.
+        click (int): Number of times the submit button has been clicked.
+        year_start (int): Start year for the time series.
+        year_end (int): End year for the time series.
+        time_unit (str): Time unit for the x-axis.
+        xaxis_var (str): Variable for the x-axis.
+
+        Returns:
+        dict: Figure object for the time-series graph.
+        """
         start = 0
         end = 3000
         if year_start is not None and year_end is not None:
@@ -32,6 +46,18 @@ def get_callbacks(app):
                   dash.dependencies.State('upload-data', 'filename'),
                   )
     def update_dataset(dataset_list, depth, upload_data, filename):
+        """
+        Update the dataset based on user selection and uploaded data.
+
+        Parameters:
+        dataset_list (list): List of selected datasets.
+        depth (str): Depth selector value.
+        upload_data (str): Contents of the uploaded data.
+        filename (str): Name of the uploaded file.
+
+        Returns:
+        str: JSON string of the concatenated dataset.
+        """
         list_df = []
         selected_df = get_df(dataset_list, depth)
         upload_df = get_upload_df(upload_data, filename)
@@ -48,6 +74,16 @@ def get_callbacks(app):
                   dash.dependencies.Input('upload-data', 'contents'),
                   dash.dependencies.State('upload-data', 'filename'))
     def print_upload_filename(upload_data, filename):
+        """
+        Display the filename of the uploaded data.
+
+        Parameters:
+        upload_data (str): Contents of the uploaded data.
+        filename (str): Name of the uploaded file.
+
+        Returns:
+        str: Filename of the uploaded file.
+        """
         return filename
 
     @app.callback(
@@ -55,5 +91,14 @@ def get_callbacks(app):
         [dash.dependencies.Input('dataset-choice', 'value')]
     )
     def update_dataset_selection(selected_file):
+        """
+        Update the dataset selection options based on the selected file.
+
+        Parameters:
+        selected_file (str): Name of the selected file.
+
+        Returns:
+        list: List of available dataset options.
+        """
         updated_options = os.listdir("./resources/bp1-qd")
         return updated_options

@@ -4,6 +4,18 @@ from callbacks.utils import generate_color_mapping
 
 
 def main_plot(df, year_start, year_end, x_unit='years'):
+    """
+    Generate a main plot with subplots for Slip, Slip Rate, Shear Stress, and State.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the dataset.
+    year_start (int): Start year for the time series.
+    year_end (int): End year for the time series.
+    x_unit (str): Time unit for the x-axis. Default is 'years'.
+
+    Returns:
+    go.Figure: Plotly figure object with the subplots.
+    """
     try:
         # Get unique datasets in the file
         datasets = df['dataset_name'].unique()
