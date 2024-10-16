@@ -7,3 +7,5 @@ dash-bootstrap-components>=1.4.1
 xarray>=2022.11.0
 netcdf4>=1.6.2
 waitress
+boto3~=1.34.154
+constructs~=10.4.2
