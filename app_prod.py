@@ -8,14 +8,14 @@ import dash_auth
 
 app = dash.Dash(external_stylesheets=[dbc.themes.CERULEAN])
 
-
-with open('./resources/login.json', 'r') as f:
-    pswd = json.load(f)
-
-auth = dash_auth.BasicAuth(
-    app,
-    pswd
-)
+#
+# with open('./resources/login.json', 'r') as f:
+#     pswd = json.load(f)
+#
+# auth = dash_auth.BasicAuth(
+#     app,
+#     pswd
+# )
 
 server = app.server
 

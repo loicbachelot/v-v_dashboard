@@ -1,8 +1,7 @@
 import dash
 import pandas as pd
-import os
 from callbacks.plots import main_plot
-from callbacks.utils import get_df, get_upload_df
+from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark
 
 
 def get_callbacks(app):
@@ -100,5 +99,5 @@ def get_callbacks(app):
         Returns:
         list: List of available dataset options.
         """
-        updated_options = os.listdir("./resources/bp1-qd")
-        return updated_options
+        benchmark_id = "bp1-qd"
+        return fetch_group_names_for_benchmark(benchmark_id)

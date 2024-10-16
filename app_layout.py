@@ -1,11 +1,11 @@
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
-import os
+from callbacks.utils import fetch_group_names_for_benchmark
 
 
 def get_main_page():
-    init_list_datasets = os.listdir("./resources/bp1-qd")
+    init_datasets = fetch_group_names_for_benchmark("bp1-qd")
     return html.Div(
         id="root",
         children=[
@@ -53,7 +53,7 @@ def get_main_page():
                                                             dbc.Label("Dataset choice"),
                                                             dbc.Checklist(
                                                                 id='dataset-choice',
-                                                                options=init_list_datasets,
+                                                                options=init_datasets,
                                                                 value=[],
                                                             ),
                                                         ],
