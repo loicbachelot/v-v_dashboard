@@ -9,3 +9,4 @@ netcdf4>=1.6.2
 waitress
 boto3~=1.34.154
 constructs~=10.4.2
+plotly-resampler~=0.10.0
