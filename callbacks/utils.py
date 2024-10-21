@@ -1,10 +1,23 @@
 import base64
-import io
+import plotly.express as px
 import boto3
 import pandas as pd
-import glob
-import plotly.express as px
+import io
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
+# Create a global S3 client for reuse across function calls
+s3_client = boto3.client('s3')
+
+def get_s3_object(bucket_name, s3_key):
+    """Fetch a single S3 object and return a DataFrame."""
+    try:
+        obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+        df = pd.read_parquet(io.BytesIO(obj['Body'].read()))
+        return df
+    except Exception as e:
+        print(f"Error fetching {s3_key}: {e}")
+        return None
 
 def convert_seconds_to_time(seconds):
     """
@@ -25,9 +38,7 @@ def convert_seconds_to_time(seconds):
 
 def fetch_group_names_for_benchmark(benchmark_id):
     try:
-        s3_client = boto3.client('s3')
         bucket_name = 'benchmark-vv-data'
-
         # List all objects with the prefix matching the benchmark ID
         response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=f"{benchmark_id}/")
 
@@ -69,35 +80,45 @@ def get_upload_df(data, filename):
         return None
 
 
-def get_df(list_df, depth_list):
-    """
-    Get a concatenated DataFrame from a list of datasets and depths.
+async def fetch_data_concurrently(bucket_name, list_df, depth_list):
+    """Fetch data concurrently from S3."""
+    all_data = []
 
-    Parameters:
-    list_df (list): List of dataset names.
-    depth_list (list): List of depth values.
+    # Use a ThreadPoolExecutor to handle blocking I/O with pandas
+    with ThreadPoolExecutor() as executor:
+        loop = asyncio.get_event_loop()
+        tasks = []
 
-    Returns:
-    DataFrame: A pandas DataFrame containing the concatenated datasets.
-    """
-    if len(list_df) > 0 and len(depth_list) > 0:
-        s3_client = boto3.client('s3')
-        bucket_name = 'benchmark-vv-data'
-        all_ds = []
+        # Prepare S3 fetch tasks for all dataset-depth combinations
         for file_name in list_df:
             for depth in depth_list:
-                s3_key = f"bp1-qd/{file_name}/{file_name}_bp1-qd_fltst_dp{depth}.dat" # TODO: Change this to the correct path
-                try:
-                    obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
-                    tmp_df = pd.read_csv(io.BytesIO(obj['Body'].read()), comment='#', delim_whitespace=True)
-                    tmp_df['dataset_name'] = file_name + "_dp" + depth
-                    tmp_df['years'], tmp_df['days'], tmp_df['hours'], tmp_df['seconds'] = convert_seconds_to_time(
-                        tmp_df['t'])
-                    all_ds.append(tmp_df)
-                except Exception as e:
-                    print(f"Error fetching {s3_key}: {e}")
-        df = pd.concat(all_ds)
-        return df
+                s3_key = f"bp1-qd/{file_name}/{file_name}_bp1-qd_fltst_dp{depth}.parquet"
+                tasks.append(
+                    loop.run_in_executor(
+                        executor, get_s3_object, 'benchmark-vv-data', s3_key
+                    )
+                )
+
+        # Collect results as they complete
+        results = await asyncio.gather(*tasks)
+
+        # Process valid DataFrames
+        for i, tmp_df in enumerate(results):
+            if tmp_df is not None:
+                file_name, depth = list_df[i // len(depth_list)], depth_list[i % len(depth_list)]
+                tmp_df['dataset_name'] = f"{file_name}_dp{depth}"
+                # tmp_df['years'], tmp_df['days'], tmp_df['hours'], tmp_df['seconds'] = convert_seconds_to_time(
+                #     tmp_df['t']
+                # )
+                all_data.append(tmp_df)
+
+    return pd.concat(all_data) if all_data else None
+
+
+def get_df(list_df, depth_list):
+    """Get a concatenated DataFrame from a list of datasets and depths."""
+    if list_df and depth_list:
+        return asyncio.run(fetch_data_concurrently('benchmark-vv-data', list_df, depth_list))
     else:
         return None
 
