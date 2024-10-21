@@ -52,8 +52,8 @@ class DashboardStack(Stack):
         task_definition = ecs.FargateTaskDefinition(
             self,
             "DashboardTaskDef",
-            memory_limit_mib=512,
-            cpu=256,
+            memory_limit_mib=8192,
+            cpu=1024,
             execution_role=task_role,
             task_role=task_role,  # Use the same role to access resources
         )
