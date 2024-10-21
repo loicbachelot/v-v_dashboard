@@ -8,28 +8,55 @@ def get_main_page():
     init_datasets = fetch_group_names_for_benchmark("bp1-qd")
     return html.Div(
         id="root",
+        style={'width': '100%', 'overflowX': 'hidden'},  # Ensures no horizontal scroll
         children=[
             dbc.Navbar(
-                [
-                    dbc.Col(
-                        html.A(href="https://cascadiaquakes.org/", children=[
-                            html.Img(
-                                src=r'https://cascadiaquakes.org/wp-content/uploads/2023/10/Crescent-Logos-Horizontal-White-230x62.png'),
-                        ]),
-                        width={"size": 4, "offset": 1},
-                    ),
-                    dbc.Col(
-                        html.H1("V&V Dashboard", style={
-                            'textAlign': 'center',
-                            'color': 'white'
-                        }),
-                        width={"size": 4, "offset": 0}
-                    ),
-                ],
+                dbc.Row(  # Use dbc.Row to properly align columns
+                    [
+                        dbc.Col(
+                            html.A(
+                                href="https://cascadiaquakes.org/",
+                                children=[
+                                    html.Img(
+                                        src='https://cascadiaquakes.org/wp-content/uploads/2023/10/Crescent-Logos-Horizontal-White-230x62.png'
+                                    ),
+                                ]
+                            ),
+                            width={"size": 3, "offset": 1},
+                        ),
+                        dbc.Col(
+                            html.H1(
+                                "V&V Dashboard",
+                                style={
+                                    'textAlign': 'center',
+                                    'color': 'white'
+                                }
+                            ),
+                            width={"size": 5, "offset": 0}
+                        ),
+                        dbc.Col(
+                            html.A(
+                                href="https://www.nsf.gov",
+                                children=[
+                                    html.Img(
+                                        src='https://new.nsf.gov/themes/custom/nsf_theme/components/sdc-components/molecules/logo/logo-desktop.svg',
+                                        style={'width': '40%', 'height': 'auto'}
+                                    ),
+                                ]
+                            ),
+                            width={"size": 3, "offset": 0},
+                        ),
+                    ],
+                    align="center",  # Center the content vertically
+                    style={'width': '100%', 'margin': '0'}  # Full width, no margin
+                ),
                 color="#26505A",
                 dark=True,
                 style={
                     'marginBottom': '1rem',
+                    'height': '100px',
+                    'width': '100%',  # Ensures full-width navbar
+                    'padding': '0'  # Remove padding to prevent overflow
                 }
             ),
             dbc.Container(
@@ -76,73 +103,75 @@ def get_main_page():
                                                 children=[
                                                     dbc.Col(children=[
                                                         dcc.Upload(id='upload-data',
-                                                                   children=[dbc.Button('Upload File', color="secondary")],
+                                                                   children=[
+                                                                       dbc.Button('Upload File', color="secondary")],
                                                                    multiple=False,
                                                                    style={'margin': '10px'}),
                                                         dbc.Button('Upload documentation', id="upload-doc",
                                                                    color="secondary", style={'margin': '10px'}),
                                                         html.Div([html.H5("Uploaded file:", style={'color': '#000000'}),
                                                                   html.P(id="upload-filename")])
-                                                        ]
+                                                    ]
                                                     )
                                                 ]
                                             ),
                                         ]),
                                         dcc.Tab(label='Graph control', value='tab-graphcontrol',
                                                 children=[
-                                                        dbc.Row(
-                                                            children=[
-                                                                dbc.Col(children=[
-                                                                    dbc.Label("Choose x axis variable"),
-                                                                    dbc.Select(
-                                                                        id="xaxis-var",
-                                                                        options=[
-                                                                            {"label": "Time", "value": "time"},
-                                                                            {"label": "Slip", "value": "slip"},
-                                                                            {"label": "Slip Rate", "value": "slip_rate"},
-                                                                            {"label": "Shear Stress", "value": "shear_stress"},
-                                                                            {"label": "State", "value": "state"}
-                                                                        ],
-                                                                        value="time"
-                                                                    ),
-                                                                    dbc.Label("time unit"),
-                                                                    dbc.Select(
-                                                                        id="time-unit",
-                                                                        options=[
-                                                                            {"label": "year", "value": "years"},
-                                                                            {"label": "days", "value": "days"},
-                                                                            {"label": "hours", "value": "hours"},
-                                                                            {"label": "seconds", "value": "seconds"}
-                                                                        ],
-                                                                        value="years"
-                                                                    ),
-                                                                    dbc.Label(
-                                                                        "Choose the period to display in years"),
-                                                                    dbc.Input(type="number", min=0, max=3000, step=1,
-                                                                              id="year-start", placeholder="start",
-                                                                              style={'marginBottom': '10px',
-                                                                                     'marginLeft': '10px'}),
-                                                                    dbc.Input(type="number", min=0, max=3000, step=1,
-                                                                              id="year-end", placeholder="end",
-                                                                              style={'marginBottom': '10px',
-                                                                                     'marginLeft': '10px'}
-                                                                              ),
-                                                                    dbc.Button("submit",
-                                                                               id='submit-button',
-                                                                               n_clicks=0,
-                                                                               color="primary",
-                                                                               style={'marginBottom': '10px',
-                                                                                      'marginLeft': '10px'}
+                                                    dbc.Row(
+                                                        children=[
+                                                            dbc.Col(children=[
+                                                                dbc.Label("Choose x axis variable"),
+                                                                dbc.Select(
+                                                                    id="xaxis-var",
+                                                                    options=[
+                                                                        {"label": "Time", "value": "time"},
+                                                                        {"label": "Slip", "value": "slip"},
+                                                                        {"label": "Slip Rate", "value": "slip_rate"},
+                                                                        {"label": "Shear Stress",
+                                                                         "value": "shear_stress"},
+                                                                        {"label": "State", "value": "state"}
+                                                                    ],
+                                                                    value="time"
+                                                                ),
+                                                                dbc.Label("time unit"),
+                                                                dbc.Select(
+                                                                    id="time-unit",
+                                                                    options=[
+                                                                        {"label": "year", "value": "years"},
+                                                                        {"label": "days", "value": "days"},
+                                                                        {"label": "hours", "value": "hours"},
+                                                                        {"label": "seconds", "value": "seconds"}
+                                                                    ],
+                                                                    value="years"
+                                                                ),
+                                                                dbc.Label(
+                                                                    "Choose the period to display in years"),
+                                                                dbc.Input(type="number", min=0, max=3000, step=1,
+                                                                          id="year-start", placeholder="start",
+                                                                          style={'marginBottom': '10px',
+                                                                                 'marginLeft': '10px'}),
+                                                                dbc.Input(type="number", min=0, max=3000, step=1,
+                                                                          id="year-end", placeholder="end",
+                                                                          style={'marginBottom': '10px',
+                                                                                 'marginLeft': '10px'}
+                                                                          ),
+                                                                dbc.Button("submit",
+                                                                           id='submit-button',
+                                                                           n_clicks=0,
+                                                                           color="primary",
+                                                                           style={'marginBottom': '10px',
+                                                                                  'marginLeft': '10px'}
 
-                                                                               ),
-                                                                    ]
-                                                                )
-                                                            ],
-                                                        )
-                                                    ]
+                                                                           ),
+                                                            ]
+                                                            )
+                                                        ],
+                                                    )
+                                                ]
                                                 ),
-                                            ]
-                                        ),
+                                    ]
+                                             ),
                                 ],
                                 align="start",
                                 width=3,
