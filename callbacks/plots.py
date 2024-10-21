@@ -1,39 +1,75 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from callbacks.utils import generate_color_mapping
-
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from plotly_resampler import FigureResampler
+import numpy as np
 
 def main_plot(df, year_start, year_end, x_unit='years'):
+    """
+    Generate a main plot with subplots for Slip, Slip Rate, Shear Stress, and State using Plotly Resampler.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the dataset.
+    year_start (int): Start year for the time series.
+    year_end (int): End year for the time series.
+    x_unit (str): Time unit for the x-axis. Default is 'years'.
+
+    Returns:
+    FigureResampler: Plotly figure object with dynamic resampling enabled.
+    """
     try:
         # Get unique datasets in the file
         datasets = df['dataset_name'].unique()
 
         # Generate color mapping for each dataset
         color_mapping = generate_color_mapping(datasets)
-        fig = make_subplots(rows=2, cols=2, shared_xaxes=True,
-                            subplot_titles=['Slip', 'Slip Rate', 'Shear Stress', 'State'],
-                            vertical_spacing=0.08, horizontal_spacing=0.1)
+
+        # Create a resampling-aware figure with linked x-axes
+        fig = FigureResampler(
+            make_subplots(
+                rows=2, cols=2, shared_xaxes=True,  # Ensure x-axes are shared
+                subplot_titles=['Slip', 'Slip Rate', 'Shear Stress', 'State'],
+                vertical_spacing=0.08, horizontal_spacing=0.1
+            )
+        )
+
+        # Add traces (without data) and append data later using resampling
         for dataset_name, group in df.groupby('dataset_name'):
             color = color_mapping[dataset_name]
 
-            # Add traces for each variable
-            fig.add_trace(go.Scatter(x=group[x_unit], y=group['slip'], mode='lines', legendgroup=dataset_name,
-                                     line=dict(color=color), name=dataset_name), row=1, col=1)
-            fig.add_trace(go.Scatter(x=group[x_unit], y=group['slip_rate'], mode='lines', legendgroup=dataset_name,
-                                     line=dict(color=color), name=dataset_name, showlegend=False), row=1, col=2)
             fig.add_trace(
-                go.Scatter(x=group[x_unit], y=group['shear_stress'], mode='lines', legendgroup=dataset_name,
-                           line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=1)
-            fig.add_trace(go.Scatter(x=group[x_unit], y=group['state'], mode='lines', legendgroup=dataset_name,
-                                     line=dict(color=color), name=dataset_name, showlegend=False), row=2, col=2)
+                go.Scatter(mode='lines', name=dataset_name, line=dict(color=color)),
+                row=1, col=1
+            )
+            fig.add_trace(
+                go.Scatter(mode='lines', name=dataset_name, showlegend=False, line=dict(color=color)),
+                row=1, col=2
+            )
+            fig.add_trace(
+                go.Scatter(mode='lines', name=dataset_name, showlegend=False, line=dict(color=color)),
+                row=2, col=1
+            )
+            fig.add_trace(
+                go.Scatter(mode='lines', name=dataset_name, showlegend=False, line=dict(color=color)),
+                row=2, col=2
+            )
 
-        # Update layout
-        fig.update_xaxes(title_text=x_unit, matches='x', row=2)
+            # Append data to the traces (resampling aware)
+            fig.data[-4].update({'x': group[x_unit], 'y': group['slip']})
+            fig.data[-3].update({'x': group[x_unit], 'y': group['slip_rate']})
+            fig.data[-2].update({'x': group[x_unit], 'y': group['shear_stress']})
+            fig.data[-1].update({'x': group[x_unit], 'y': group['state']})
+
+        # Update axis titles
+        fig.update_xaxes(title_text=x_unit, matches='x')  # Ensure all x-axes are linked
         fig.update_yaxes(title_text="Slip (m)", row=1, col=1)
         fig.update_yaxes(title_text="Slip rate (log10 m/s)", row=1, col=2)
         fig.update_yaxes(title_text="Shear stress (MPa)", row=2, col=1)
         fig.update_yaxes(title_text="State (log10 s)", row=2, col=2)
 
+        # Define time ranges based on x_unit
         if x_unit == 'seconds':
             time_start = year_start * 60 * 60 * 24 * 365
             time_end = year_end * 60 * 60 * 24 * 365
@@ -49,14 +85,36 @@ def main_plot(df, year_start, year_end, x_unit='years'):
         else:
             time_start = group[x_unit].min()
             time_end = group[x_unit].max()
-        fig.update_layout(title=f'Variables over {x_unit}', showlegend=True, xaxis=dict(range=[time_start, time_end]))
+
+        # Update layout with title and shared x-axis range
+        fig.update_layout(
+            title=f'Variables over {x_unit}',
+            showlegend=True,
+            xaxis=dict(range=[time_start, time_end])  # Sync initial x-axis range
+        )
 
     except Exception as e:
-        fig = make_subplots(rows=2, cols=2, shared_xaxes=True,
-                            subplot_titles=['Slip', 'Slip Rate', 'Shear Stress', 'State'],
-                            vertical_spacing=0.04, horizontal_spacing=0.05)
-        fig.add_trace(go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines'), row=1, col=1)
-        fig.add_trace(go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines'), row=2, col=1)
-        fig.add_trace(go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines'), row=1, col=2)
-        fig.add_trace(go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines'), row=2, col=2)
+        print(e)
+        # Fallback plot in case of error
+        x = np.arange(1_000_000)
+        noisy_sin = (3 + np.sin(x / 200) + np.random.randn(len(x)) / 10) * x / 1_000
+        fig = FigureResampler(
+            make_subplots(
+                rows=2, cols=2, shared_xaxes=True,
+                subplot_titles=['Slip', 'Slip Rate', 'Shear Stress', 'State'],
+                vertical_spacing=0.04, horizontal_spacing=0.05
+            )
+        )
+        for i in range(1, 3):
+            for j in range(1, 3):
+                fig.add_trace(
+                    go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines'),
+                    row=i, col=j
+                )
+        fig.update_layout(
+            title=f'Variables over {x_unit}',
+            showlegend=True,
+            xaxis=dict(range=[x[0], x[-1]])
+        )
+
     return fig
