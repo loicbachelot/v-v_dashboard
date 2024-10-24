@@ -17,6 +17,12 @@ class DashboardStack(Stack):
         # Create a VPC for ECS Fargate
         vpc = ec2.Vpc(self, "DashboardVPC", max_azs=2)
 
+        # Add an S3 VPC Endpoint to the VPC
+        s3_endpoint = vpc.add_gateway_endpoint(
+            "S3Endpoint",
+            service=ec2.GatewayVpcEndpointAwsService.S3
+        )
+
         # Create an ECS Cluster inside the VPC
         cluster = ecs.Cluster(self, "DashboardCluster", vpc=vpc)
 

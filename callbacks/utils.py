@@ -1,20 +1,30 @@
 import base64
+import json
+import urllib
 import plotly.express as px
 import boto3
 import pandas as pd
 import io
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import awswrangler as wr
+from dash import html
 
 # Create a global S3 client for reuse across function calls
 s3_client = boto3.client('s3')
 
+# Helper function to parse the benchmark_id from the URL
+def parse_benchmark_id(search):
+    query_params = urllib.parse.parse_qs(search.lstrip('?'))
+    return query_params.get('benchmark_id', [''])[0]  # Return first value or empty string
+
+
 def get_s3_object(bucket_name, s3_key):
     """Fetch a single S3 object and return a DataFrame."""
     try:
-        obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
-        df = pd.read_parquet(io.BytesIO(obj['Body'].read()))
+        df = wr.s3.read_parquet(f"s3://{bucket_name}/{s3_key}")
         return df
+
     except Exception as e:
         print(f"Error fetching {s3_key}: {e}")
         return None
@@ -40,8 +50,7 @@ def fetch_group_names_for_benchmark(benchmark_id):
     try:
         bucket_name = 'benchmark-vv-data'
         # List all objects with the prefix matching the benchmark ID
-        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=f"{benchmark_id}/")
-
+        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=f"{parse_benchmark_id(benchmark_id)}/")
         # Use a set to store unique group names
         group_names = set()
         if 'Contents' in response:
@@ -68,6 +77,8 @@ def get_upload_df(data, filename):
     Returns:
     DataFrame: A pandas DataFrame containing the uploaded data with additional time columns.
     """
+    if data is None:
+        return None
     try:
         content_type, content_string = data.split(',')
         decoded = base64.b64decode(content_string)
@@ -76,11 +87,11 @@ def get_upload_df(data, filename):
         df['years'], df['days'], df['hours'], df['seconds'] = convert_seconds_to_time(df['t'])
         return df
     except Exception as e:
-        print(e)
+        print(f"Error reading uploaded data: {e}")
         return None
 
 
-async def fetch_data_concurrently(bucket_name, list_df, depth_list):
+async def fetch_data_concurrently(bucket_name, benchmark_id, list_df, depth):
     """Fetch data concurrently from S3."""
     all_data = []
 
@@ -91,13 +102,12 @@ async def fetch_data_concurrently(bucket_name, list_df, depth_list):
 
         # Prepare S3 fetch tasks for all dataset-depth combinations
         for file_name in list_df:
-            for depth in depth_list:
-                s3_key = f"bp1-qd/{file_name}/{file_name}_bp1-qd_fltst_dp{depth}.parquet"
-                tasks.append(
-                    loop.run_in_executor(
-                        executor, get_s3_object, 'benchmark-vv-data', s3_key
-                    )
+            s3_key = f"{benchmark_id}/{file_name}/{file_name}_{depth}.parquet"
+            tasks.append(
+                loop.run_in_executor(
+                    executor, get_s3_object, 'benchmark-vv-data', s3_key
                 )
+            )
 
         # Collect results as they complete
         results = await asyncio.gather(*tasks)
@@ -105,20 +115,17 @@ async def fetch_data_concurrently(bucket_name, list_df, depth_list):
         # Process valid DataFrames
         for i, tmp_df in enumerate(results):
             if tmp_df is not None:
-                file_name, depth = list_df[i // len(depth_list)], depth_list[i % len(depth_list)]
+                file_name = list_df[i]
                 tmp_df['dataset_name'] = f"{file_name}_dp{depth}"
-                # tmp_df['years'], tmp_df['days'], tmp_df['hours'], tmp_df['seconds'] = convert_seconds_to_time(
-                #     tmp_df['t']
-                # )
                 all_data.append(tmp_df)
 
     return pd.concat(all_data) if all_data else None
 
 
-def get_df(list_df, depth_list):
+def get_df(benchmark_id, list_df, depth):
     """Get a concatenated DataFrame from a list of datasets and depths."""
-    if list_df and depth_list:
-        return asyncio.run(fetch_data_concurrently('benchmark-vv-data', list_df, depth_list))
+    if list_df and depth:
+        return asyncio.run(fetch_data_concurrently('benchmark-vv-data', parse_benchmark_id(benchmark_id), list_df, depth))
     else:
         return None
 
@@ -138,3 +145,37 @@ def generate_color_mapping(datasets):
     for i, dataset in enumerate(datasets):
         color_mapping[dataset] = colors[i % len(colors)]
     return color_mapping
+
+def get_metadata(benchmark_id, dataset_name):
+    """
+    Get metadata for a dataset.
+
+    Parameters:
+    benchmark_id (str): The benchmark ID.
+    dataset_name (str): The name of the dataset.
+
+    Returns:
+    dict: Metadata for the dataset.
+    """
+    try:
+        bucket_name = 'benchmark-vv-data'
+        s3_key = f"{parse_benchmark_id(benchmark_id)}/{dataset_name}/metadata.json"
+        response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+        metadata = response['Body'].read().decode('utf-8')
+        return render_json(json.loads(metadata))
+    except Exception as e:
+        print(f"Error fetching metadata: {e}")
+        return None
+
+
+# Recursive function to render JSON fields dynamically
+def render_json(data):
+    if isinstance(data, dict):
+        return html.Ul([
+            html.Li([html.B(f"{key}: "), render_json(value)])
+            for key, value in data.items()
+        ])
+    elif isinstance(data, list):
+        return html.Ul([html.Li(render_json(item)) for item in data])
+    else:
+        return html.Span(str(data))

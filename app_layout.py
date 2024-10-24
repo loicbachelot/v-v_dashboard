@@ -1,15 +1,15 @@
 import dash_bootstrap_components as dbc
 from dash import dcc
 from dash import html
-from callbacks.utils import fetch_group_names_for_benchmark
 
 
 def get_main_page():
-    init_datasets = fetch_group_names_for_benchmark("bp1-qd")
+    init_datasets = []
     return html.Div(
         id="root",
         style={'width': '100%', 'overflowX': 'hidden'},  # Ensures no horizontal scroll
         children=[
+            dcc.Location(id='url', refresh=False),
             dbc.Navbar(
                 dbc.Row(  # Use dbc.Row to properly align columns
                     [
@@ -88,17 +88,20 @@ def get_main_page():
                                                     dbc.Col(
                                                         children=[
                                                             dbc.Label("Choose the depth"),
-                                                            dbc.Checklist(
+                                                            dbc.Select(
                                                                 id='depth-selector',
                                                                 options=["000", "025", "050", "075", "100",
                                                                          "125", "150", "175", "200",
                                                                          "250", "350"],
-                                                                value=[],
+                                                                value='000'
                                                             ),
                                                         ],
                                                     ),
+                                                    dbc.Button('Show graphs', id="show-graphs",
+                                                               color="primary", style={'margin': '10px'}),
                                                 ]
                                             ),
+                                            html.Hr(),
                                             dbc.Row(
                                                 children=[
                                                     dbc.Col(children=[
@@ -106,11 +109,36 @@ def get_main_page():
                                                                    children=[
                                                                        dbc.Button('Upload File', color="secondary")],
                                                                    multiple=False,
-                                                                   style={'margin': '10px'}),
-                                                        dbc.Button('Upload documentation', id="upload-doc",
-                                                                   color="secondary", style={'margin': '10px'}),
+                                                                   style={'margin': '10px'}
+                                                                   ),
                                                         html.Div([html.H5("Uploaded file:", style={'color': '#000000'}),
                                                                   html.P(id="upload-filename")])
+                                                    ]
+                                                    )
+                                                ]
+                                            ),
+                                            html.Hr(),
+                                            dbc.Row(
+                                                children=[
+                                                    dbc.Col(children=[
+                                                        html.Div([html.H5("List selected datasets, click for information:", style={'color': '#000000'}),
+                                                                  html.Div(id='links-container'),  # Container for links
+                                                                  # Bootstrap modal
+                                                                  dbc.Modal(
+                                                                      [
+                                                                          dbc.ModalHeader(
+                                                                              dbc.ModalTitle("File Metadata")),
+                                                                          dbc.ModalBody(html.Pre(id='popup-content')),
+                                                                          # JSON content display
+                                                                          dbc.ModalFooter(
+                                                                              dbc.Button("Close", id="close-popup",
+                                                                                         className="ms-auto",
+                                                                                         n_clicks=0)
+                                                                          ),
+                                                                      ],
+                                                                      id="popup-modal",
+                                                                      is_open=False,
+                                                                  ),])
                                                     ]
                                                     )
                                                 ]
@@ -121,19 +149,6 @@ def get_main_page():
                                                     dbc.Row(
                                                         children=[
                                                             dbc.Col(children=[
-                                                                dbc.Label("Choose x axis variable"),
-                                                                dbc.Select(
-                                                                    id="xaxis-var",
-                                                                    options=[
-                                                                        {"label": "Time", "value": "time"},
-                                                                        {"label": "Slip", "value": "slip"},
-                                                                        {"label": "Slip Rate", "value": "slip_rate"},
-                                                                        {"label": "Shear Stress",
-                                                                         "value": "shear_stress"},
-                                                                        {"label": "State", "value": "state"}
-                                                                    ],
-                                                                    value="time"
-                                                                ),
                                                                 dbc.Label("time unit"),
                                                                 dbc.Select(
                                                                     id="time-unit",
@@ -182,7 +197,7 @@ def get_main_page():
                                         id='time-series-graph',
                                         style={'responsive': True,
                                                'width': '100%',
-                                               'height': '90vh'},
+                                               'height': '85vh'},
                                         animate=False,
                                         config={"displayModeBar": True,
                                                 "displaylogo": False,
