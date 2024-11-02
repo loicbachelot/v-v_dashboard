@@ -7,8 +7,12 @@ from aws_cdk import (
     aws_ecs as ecs,
     aws_ecs_patterns as ecs_patterns,
     aws_s3 as s3,
+    aws_s3_notifications as s3_notifications,
+    aws_lambda as _lambda, Duration,
 )
 from constructs import Construct
+from aws_cdk.aws_lambda_python_alpha import PythonFunction
+
 
 class DashboardStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
@@ -37,8 +41,8 @@ class DashboardStack(Stack):
             "BenchmarkDataBucket",
             bucket_name="benchmark-vv-data",
             versioned=True,  # Optional: Enable versioning
-            removal_policy=RemovalPolicy.DESTROY,  # Cleanup on stack deletion
-            auto_delete_objects=True,  # Automatically delete objects with the bucket
+            removal_policy=RemovalPolicy.RETAIN,  # Cleanup on stack deletion
+            # auto_delete_objects=True,  # Automatically delete objects with the bucket
         )
 
         # Grant permissions for the ECS task to read from the S3 bucket
@@ -80,3 +84,46 @@ class DashboardStack(Stack):
             task_definition=task_definition,
             public_load_balancer=True,  # Make the service accessible publicly
         )
+
+        # Temporary S3 bucket to upload new files
+        temp_bucket = s3.Bucket(
+            self,
+            "TemporaryUploadBucket",
+            bucket_name="benchmark-vv-tmp-upload",
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
+        )
+
+        # IAM Role for Lambda with permissions to read/write S3 buckets
+        lambda_role = iam.Role(
+            self,
+            "LambdaExecutionRole",
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole"),
+                iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+            ]
+        )
+
+        # Lambda function to process files from temp bucket and move them to the main bucket
+        process_uploads = PythonFunction(
+            self,
+            "ProcessUploadsLambda",
+            function_name="process_uploads",
+            entry="lambda_process_uploads",  # Lambda folder containing lambda_function.py and requirements.txt
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            index="lambda_function.py",
+            handler="handler",
+            timeout=Duration.minutes(5),
+        )
+
+        # Add notification to trigger Lambda when a folder is uploaded
+        temp_bucket.add_event_notification(
+            s3.EventType.OBJECT_CREATED,
+            s3_notifications.LambdaDestination(process_uploads),
+            # s3.NotificationKeyFilter(prefix="")  # Matches folder uploads
+        )
+
+        # Grant the Lambda function access to read/write both buckets
+        s3_bucket.grant_read_write(process_uploads)
+        temp_bucket.grant_read_write(process_uploads)

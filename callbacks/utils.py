@@ -56,13 +56,12 @@ def fetch_group_names_for_benchmark(benchmark_id):
         if 'Contents' in response:
             for obj in response['Contents']:
                 parts = obj['Key'].split('/')
-                if len(parts) > 1:  # Ensure it's a valid path with group name
+                if len(parts[1]) > 1:  # Ensure it's a valid path with group name
                     group_names.add(parts[1])  # Add group name to the set
 
     except Exception as e:
         print(f"Error fetching datasets: {e}")
         group_names = {'no datasets found'}
-
     return list(group_names)
 
 
