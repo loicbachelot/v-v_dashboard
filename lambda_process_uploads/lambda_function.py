@@ -1,8 +1,10 @@
 import os
 import json
+import zipfile
+
 import boto3
 import pandas as pd
-from io import StringIO
+from io import StringIO, BytesIO
 
 s3 = boto3.client('s3')
 
@@ -26,36 +28,40 @@ def extract_header(content):
                 header_data.setdefault('comments', []).append(line[2:].strip())
     return header_data
 
-def process_folder(bucket_name, folder_prefix, code_name, version):
+
+def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version):
     output_folder = f"/tmp/{code_name}_v{version}/"
     os.makedirs(output_folder, exist_ok=True)
 
     file_list = []
     common_header = None
 
-    # List all files under the uploaded folder
-    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=folder_prefix)
-    for obj in response.get('Contents', []):
-        if obj['Key'].endswith(".dat"):
-            # Download the .dat file from S3
-            file_content = s3.get_object(Bucket=bucket_name, Key=obj['Key'])['Body'].read().decode('utf-8')
+    # Download and unzip the file
+    zip_obj = s3.get_object(Bucket=bucket_name, Key=zip_key)
+    with zipfile.ZipFile(BytesIO(zip_obj['Body'].read())) as zip_file:
+        for file_name in zip_file.namelist():
+            if file_name.endswith(".dat"):
+                # Read the content of each .dat file
+                with zip_file.open(file_name) as file:
+                    file_content = file.read().decode('utf-8')
 
-            # Extract the header from the first file
-            if common_header is None:
-                common_header = extract_header(file_content)
+                    # Extract the header from the first .dat file
+                    if common_header is None:
+                        common_header = extract_header(file_content)
 
-            # Create DataFrame and convert time
-            df = pd.read_csv(StringIO(file_content), comment='#', delim_whitespace=True)
-            df['years'], df['days'], df['hours'], df['seconds'] = convert_seconds_to_time(df['t'])
+                    # Process the file content into a DataFrame
+                    df = pd.read_csv(StringIO(file_content), comment='#', delim_whitespace=True)
+                    df['years'], df['days'], df['hours'], df['seconds'] = convert_seconds_to_time(df['t'])
 
-            # Determine depth and save to Parquet
-            depth = obj['Key'].split('dp')[-1].split('.')[0]
-            output_path = os.path.join(output_folder, f"{code_name}_v{version}_{depth}.parquet")
-            df.to_parquet(output_path, index=False)
+                    # Determine the depth and save to Parquet
+                    depth = file_name.split('dp')[-1].split('.')[0]
+                    output_path = os.path.join(output_folder, f"{code_name}_v{version}_{depth}.parquet")
+                    df.to_parquet(output_path, index=False)
 
-            # Upload the Parquet file to the main bucket
-            s3.upload_file(output_path, "benchmark-vv-data", f"{code_name}_v{version}/{os.path.basename(output_path)}")
-            file_list.append(obj['Key'])
+                    # Upload the Parquet file to the main bucket with the benchmark_pb structure
+                    target_key = f"{benchmark_pb}/{code_name}_v{version}/{os.path.basename(output_path)}"
+                    s3.upload_file(output_path, "benchmark-vv-data", target_key)
+                    file_list.append(file_name)
 
     # Save metadata as JSON and upload it
     metadata = {"common_header": common_header, "processed_files": file_list}
@@ -63,18 +69,21 @@ def process_folder(bucket_name, folder_prefix, code_name, version):
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=4)
 
-    s3.upload_file(metadata_path, "benchmark-vv-data", f"{code_name}_v{version}/metadata.json")
+    s3.upload_file(metadata_path, "benchmark-vv-data", f"{benchmark_pb}/{code_name}_v{version}/metadata.json")
+
 
 def handler(event, context):
     for record in event['Records']:
         bucket_name = record['s3']['bucket']['name']
-        folder_prefix = record['s3']['object']['key'].rstrip('/') + '/'
+        zip_key = record['s3']['object']['key']
 
-        # Extract code_name and version from the folder name
-        folder_name = folder_prefix.split('/')[-2]
-        code_name, version = folder_name.split('_', 1)
+        # Extract benchmark_pb, code_name, and version from the zip key
+        parts = zip_key.split('/')
+        benchmark_pb = parts[0]  # e.g., bp1_qd
+        zip_name = os.path.basename(zip_key)
+        code_name, version = zip_name.rsplit('.', 1)[0].split('_', 1)
 
         try:
-            process_folder(bucket_name, folder_prefix, code_name, version)
+            process_zip(bucket_name, zip_key, benchmark_pb, code_name, version)
         except Exception as e:
-            print(f"Error processing {folder_prefix}: {e}")
+            print(f"Error processing {zip_key}: {e}")

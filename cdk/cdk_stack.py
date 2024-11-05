@@ -105,16 +105,23 @@ class DashboardStack(Stack):
             ]
         )
 
-        # Lambda function to process files from temp bucket and move them to the main bucket
-        process_uploads = PythonFunction(
+        repo = ecr.Repository.from_repository_name(
+            self,
+            "VvLambdaUploadRepo",
+            repository_name="vv-lambda-upload"
+        )
+
+        # Lambda function to use the manually pushed Docker image
+        process_uploads = _lambda.DockerImageFunction(
             self,
             "ProcessUploadsLambda",
             function_name="process_uploads",
-            entry="lambda_process_uploads",  # Lambda folder containing lambda_function.py and requirements.txt
-            runtime=_lambda.Runtime.PYTHON_3_12,
-            index="lambda_function.py",
-            handler="handler",
+            code=_lambda.DockerImageCode.from_ecr(
+                repository=repo,  # Reference the created repo
+                tag="latest",
+            ),
             timeout=Duration.minutes(5),
+            memory_size=2048,
         )
 
         # Add notification to trigger Lambda when a folder is uploaded
