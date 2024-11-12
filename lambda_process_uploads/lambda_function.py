@@ -30,7 +30,7 @@ def extract_header(content):
 
 
 def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version):
-    output_folder = f"/tmp/{code_name}_v{version}/"
+    output_folder = f"/tmp/{code_name}_{version}/"
     os.makedirs(output_folder, exist_ok=True)
 
     file_list = []
@@ -55,11 +55,11 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version):
 
                     # Determine the depth and save to Parquet
                     depth = file_name.split('dp')[-1].split('.')[0]
-                    output_path = os.path.join(output_folder, f"{code_name}_v{version}_{depth}.parquet")
+                    output_path = os.path.join(output_folder, f"{code_name}_{version}_{depth}.parquet")
                     df.to_parquet(output_path, index=False)
 
                     # Upload the Parquet file to the main bucket with the benchmark_pb structure
-                    target_key = f"{benchmark_pb}/{code_name}_v{version}/{os.path.basename(output_path)}"
+                    target_key = f"{benchmark_pb}/{code_name}_{version}/{os.path.basename(output_path)}"
                     s3.upload_file(output_path, "benchmark-vv-data", target_key)
                     file_list.append(file_name)
 
@@ -69,7 +69,7 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version):
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=4)
 
-    s3.upload_file(metadata_path, "benchmark-vv-data", f"{benchmark_pb}/{code_name}_v{version}/metadata.json")
+    s3.upload_file(metadata_path, "benchmark-vv-data", f"{benchmark_pb}/{code_name}_{version}/metadata.json")
 
 
 def handler(event, context):
