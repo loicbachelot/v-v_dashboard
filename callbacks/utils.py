@@ -50,14 +50,14 @@ def fetch_group_names_for_benchmark(benchmark_id):
     try:
         bucket_name = 'benchmark-vv-data'
         # List all objects with the prefix matching the benchmark ID
-        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=f"{parse_benchmark_id(benchmark_id)}/")
+        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=f"public_ds/{parse_benchmark_id(benchmark_id)}/")
         # Use a set to store unique group names
         group_names = set()
         if 'Contents' in response:
             for obj in response['Contents']:
                 parts = obj['Key'].split('/')
-                if len(parts[1]) > 1:  # Ensure it's a valid path with group name
-                    group_names.add(parts[1])  # Add group name to the set
+                if len(parts[2]) > 1:  # Ensure it's a valid path with group name
+                    group_names.add(parts[2])  # Add group name to the set
 
     except Exception as e:
         print(f"Error fetching datasets: {e}")
@@ -101,7 +101,7 @@ async def fetch_data_concurrently(bucket_name, benchmark_id, list_df, depth):
 
         # Prepare S3 fetch tasks for all dataset-depth combinations
         for file_name in list_df:
-            s3_key = f"{benchmark_id}/{file_name}/{file_name}_{depth}.parquet"
+            s3_key = f"public_ds/{benchmark_id}/{file_name}/{file_name}_{depth}.parquet"
             tasks.append(
                 loop.run_in_executor(
                     executor, get_s3_object, 'benchmark-vv-data', s3_key
@@ -158,7 +158,7 @@ def get_metadata(benchmark_id, dataset_name):
     """
     try:
         bucket_name = 'benchmark-vv-data'
-        s3_key = f"{parse_benchmark_id(benchmark_id)}/{dataset_name}/metadata.json"
+        s3_key = f"public_ds/{parse_benchmark_id(benchmark_id)}/{dataset_name}/metadata.json"
         response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
         metadata = response['Body'].read().decode('utf-8')
         return render_json(json.loads(metadata))
