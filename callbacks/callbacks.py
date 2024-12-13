@@ -140,4 +140,10 @@ def get_callbacks(app):
         Returns:
         list: List of available dataset options.
         """
-        return fetch_group_names_for_benchmark(search)
+        datasets = fetch_group_names_for_benchmark(search)
+        links = [
+            {'label': html.Span([file, html.A(": info", href='#', id={'type': 'file-link', 'index': file})]),
+             'value': file}
+            for file in datasets or []  # Handle case if dataset_list is None
+        ]
+        return links
