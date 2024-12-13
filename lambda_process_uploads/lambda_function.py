@@ -29,7 +29,7 @@ def extract_header(content):
     return header_data
 
 
-def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version):
+def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_metadata=None, **kwargs):
     output_folder = f"/tmp/{code_name}_{version}/"
     os.makedirs(output_folder, exist_ok=True)
 
@@ -60,7 +60,7 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version):
 
                     # Upload the Parquet file to the main bucket with the benchmark_pb structure
                     target_key = f"public_ds/{benchmark_pb}/{code_name}_{version}/{os.path.basename(output_path)}"
-                    s3.upload_file(output_path, "benchmark-vv-data", target_key)
+                    s3.upload_file(output_path, "benchmark-vv-data", target_key, ExtraArgs={"Metadata": user_metadata})
                     file_list.append(file_name)
 
     # Save metadata as JSON and upload it
@@ -69,13 +69,18 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version):
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=4)
 
-    s3.upload_file(metadata_path, "benchmark-vv-data", f"public_ds/{benchmark_pb}/{code_name}_{version}/metadata.json")
+    s3.upload_file(metadata_path, "benchmark-vv-data", f"public_ds/{benchmark_pb}/{code_name}_{version}/metadata.json", ExtraArgs={"Metadata": user_metadata})
 
 
 def handler(event, context):
     for record in event['Records']:
         bucket_name = record['s3']['bucket']['name']
         zip_key = record['s3']['object']['key']
+
+        # Extract metadata from the uploaded file
+        response = s3.head_object(Bucket=bucket_name, Key=zip_key)
+        user_metadata = response.get('Metadata', {})
+        print(f'Metadata: {user_metadata}')
 
         # Extract benchmark_pb, code_name, and version from the zip key
         parts = zip_key.split('/')
@@ -85,6 +90,6 @@ def handler(event, context):
         print(f'Processing benchmark {benchmark_pb}, code {code_name}, version {version}')
 
         try:
-            process_zip(bucket_name, zip_key, benchmark_pb, code_name, version)
+            process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_metadata)
         except Exception as e:
             print(f"Error processing {zip_key}: {e}")

@@ -176,7 +176,7 @@ class DashboardStack(Stack):
             function_name="process_uploads",
             code=_lambda.DockerImageCode.from_ecr(
                 repository=repo,
-                tag="2.0.0",
+                tag="2.0.1",
             ),
             timeout=Duration.minutes(5),
             memory_size=2048,
