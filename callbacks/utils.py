@@ -58,11 +58,12 @@ def fetch_group_names_for_benchmark(benchmark_id):
                 parts = obj['Key'].split('/')
                 if len(parts[2]) > 1:  # Ensure it's a valid path with group name
                     group_names.add(parts[2])  # Add group name to the set
+        result = sorted(list(group_names))
 
     except Exception as e:
         print(f"Error fetching datasets: {e}")
-        group_names = {'no datasets found'}
-    return list(group_names)
+        result = {'no datasets found'}
+    return result
 
 
 def get_upload_df(data, filename):
