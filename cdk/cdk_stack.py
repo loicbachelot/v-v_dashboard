@@ -157,8 +157,10 @@ class DashboardStack(Stack):
             )
         )
 
-        # Grant read access (GetObject) on objects under upload/
+        # Grant read access (GetObject) on objects under upload/ and benchmark_templates/
         s3_bucket.grant_read(lambda_role, "upload/*")
+        s3_bucket.grant_read(lambda_role, "benchmark_templates/*")
+
 
         # Grant write access (PutObject) on objects under public_ds/
         s3_bucket.grant_put(lambda_role, "public_ds/*")
@@ -176,7 +178,7 @@ class DashboardStack(Stack):
             function_name="process_uploads",
             code=_lambda.DockerImageCode.from_ecr(
                 repository=repo,
-                tag="2.0.1",
+                tag="2.1.2",
             ),
             timeout=Duration.minutes(5),
             memory_size=2048,
