@@ -87,13 +87,17 @@ def get_main_page():
                                                     ),
                                                     dbc.Col(
                                                         children=[
-                                                            dbc.Label("Choose the depth"),
+                                                            dbc.Label("Choose the file type"),
                                                             dbc.Select(
-                                                                id='depth-selector',
-                                                                options=["000", "025", "050", "075", "100",
-                                                                         "125", "150", "175", "200",
-                                                                         "250", "350"],
-                                                                value='000'
+                                                                id='file-type-selector',
+                                                                options=[],
+                                                                value=''
+                                                            ),
+                                                            dbc.Label("Choose the receiver"),
+                                                            dbc.Select(
+                                                                id='receiver-selector',
+                                                                options=[],
+                                                                value=''
                                                             ),
                                                         ],
                                                     ),
@@ -145,45 +149,45 @@ def get_main_page():
                                             ),
                                         ]),
                                         dcc.Tab(label='Graph control', value='tab-graphcontrol',
-                                                children=[
-                                                    dbc.Row(
-                                                        children=[
-                                                            dbc.Col(children=[
-                                                                dbc.Label("time unit"),
-                                                                dbc.Select(
-                                                                    id="time-unit",
-                                                                    options=[
-                                                                        {"label": "year", "value": "years"},
-                                                                        {"label": "days", "value": "days"},
-                                                                        {"label": "hours", "value": "hours"},
-                                                                        {"label": "seconds", "value": "seconds"}
-                                                                    ],
-                                                                    value="years"
-                                                                ),
-                                                                dbc.Label(
-                                                                    "Choose the period to display in years"),
-                                                                dbc.Input(type="number", min=0, max=3000, step=1,
-                                                                          id="year-start", placeholder="start",
-                                                                          style={'marginBottom': '10px',
-                                                                                 'marginLeft': '10px'}),
-                                                                dbc.Input(type="number", min=0, max=3000, step=1,
-                                                                          id="year-end", placeholder="end",
-                                                                          style={'marginBottom': '10px',
-                                                                                 'marginLeft': '10px'}
-                                                                          ),
-                                                                dbc.Button("submit",
-                                                                           id='submit-button',
-                                                                           n_clicks=0,
-                                                                           color="primary",
-                                                                           style={'marginBottom': '10px',
-                                                                                  'marginLeft': '10px'}
-
-                                                                           ),
-                                                            ]
-                                                            )
-                                                        ],
-                                                    )
-                                                ]
+                                                # children=[
+                                                #     dbc.Row(
+                                                #         children=[
+                                                #             dbc.Col(children=[
+                                                #                 dbc.Label("time unit"),
+                                                #                 dbc.Select(
+                                                #                     id="time-unit",
+                                                #                     options=[
+                                                #                         {"label": "year", "value": "years"},
+                                                #                         {"label": "days", "value": "days"},
+                                                #                         {"label": "hours", "value": "hours"},
+                                                #                         {"label": "seconds", "value": "seconds"}
+                                                #                     ],
+                                                #                     value="years"
+                                                #                 ),
+                                                #                 dbc.Label(
+                                                #                     "Choose the period to display in years"),
+                                                #                 dbc.Input(type="number", min=0, max=3000, step=1,
+                                                #                           id="year-start", placeholder="start",
+                                                #                           style={'marginBottom': '10px',
+                                                #                                  'marginLeft': '10px'}),
+                                                #                 dbc.Input(type="number", min=0, max=3000, step=1,
+                                                #                           id="year-end", placeholder="end",
+                                                #                           style={'marginBottom': '10px',
+                                                #                                  'marginLeft': '10px'}
+                                                #                           ),
+                                                #                 dbc.Button("submit",
+                                                #                            id='submit-button',
+                                                #                            n_clicks=0,
+                                                #                            color="primary",
+                                                #                            style={'marginBottom': '10px',
+                                                #                                   'marginLeft': '10px'}
+                                                #
+                                                #                            ),
+                                                #             ]
+                                                #             )
+                                                #         ],
+                                                #     )
+                                                # ]
                                                 ),
                                     ]
                                              ),
@@ -210,6 +214,6 @@ def get_main_page():
                                 width=9)
                         ])
                 ]),
-            # stor user's dataset
-            dcc.Store(id='dataset-value')
+            # store user's dataset
+            dcc.Store(id='benchmark-params')
         ])

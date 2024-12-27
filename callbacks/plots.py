@@ -4,8 +4,109 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from plotly_resampler import FigureResampler
 
+
+def main_plot_dynamic(df, variable_list):
+    """
+    Generate a dynamic plot with subplots based on a list of variable dictionaries.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the dataset.
+    year_start (int): Start year for the time series.
+    year_end (int): End year for the time series.
+    variable_list (list): List of dictionaries with keys 'name', 'unit', and 'description'.
+    x_unit (str): Time unit for the x-axis. Default is 'seconds'.
+
+    Returns:
+    FigureResampler: Plotly figure object with dynamic resampling enabled.
+    """
+    try:
+        # Calculate the number of rows needed for a 2-column layout
+        num_vars = len(variable_list)
+        num_rows = (num_vars + 1) // 2  # Round up to ensure enough rows
+
+        # Get unique datasets in the file
+        datasets = df['dataset_name'].unique()
+
+        # Generate color mapping for each dataset
+        color_mapping = generate_color_mapping(datasets)
+
+        # Create a resampling-aware figure with linked x-axes
+        fig = FigureResampler(
+            make_subplots(
+                rows=num_rows, cols=2, shared_xaxes=True,
+                subplot_titles=[f"{var['description']} ({var['unit']})" for var in variable_list],
+                vertical_spacing=0.1, horizontal_spacing=0.08
+            )
+        )
+
+        # Add traces (without data) and append data later using resampling
+        for dataset_name, group in df.groupby('dataset_name'):
+            color = color_mapping[dataset_name]
+
+            for idx, var in enumerate(variable_list):
+                row = (idx // 2) + 1
+                col = (idx % 2) + 1
+
+                fig.add_trace(
+                    go.Scatter(
+                        mode='lines',
+                        name=dataset_name,
+                        line=dict(color=color),
+                        showlegend=idx==0,  # Show legend only for the first subplot
+                        legendgroup = dataset_name,
+                    ),
+                    row=row, col=col
+                )
+
+                # Append data to the traces (resampling aware)
+                fig.data[-1].update({'x': group['t'], 'y': group[var['name']]})
+
+        # # Update axis titles dynamically
+        # for idx, var in enumerate(variable_list):
+        #     row = (idx // 2) + 1
+        #     col = (idx % 2) + 1
+        #     fig.update_yaxes(title_text=f"{var['description']} ({var['unit']})", row=row, col=col)
+
+        # Update layout with title and shared x-axis range
+        for idx in range(1, len(variable_list) + 1):
+            row = (idx // 2) + 1
+            col = (idx % 2) + 1
+            if row == num_rows:  # Only update the x-axis for the last row
+                fig.update_xaxes(title_text="Time (seconds)", row=row, col=col, matches='x')
+            else:
+                fig.update_xaxes(matches='x')
+
+        # Update layout to include legend and global settings
+        fig.update_layout(
+            showlegend=True
+        )
+
+    except Exception as e:
+        print(f"error plotting dataset: {e}")
+        # Fallback plot in case of error
+        fig = FigureResampler(
+            make_subplots(
+                rows=num_rows, cols=2, shared_xaxes=True,
+                subplot_titles=[f"{var['description']} ({var['unit']})" for var in variable_list],
+                vertical_spacing=0.04, horizontal_spacing=0.05
+            )
+        )
+        for idx, var in enumerate(variable_list):
+            row = (idx // 2) + 1
+            col = (idx % 2) + 1
+            fig.add_trace(
+                go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines', name="test_name", showlegend=idx==0, legendgroup = "test_name"),
+                row=row, col=col
+            )
+        fig.update_layout(
+            showlegend=True,
+        )
+
+    return fig
+
+
 #TODO check how to reuse traces between calls
-def main_plot(df, year_start, year_end, x_unit='years'):
+def main_plot(df, plots_params, year_start, year_end, x_unit='years'):
     """
     Generate a main plot with subplots for Slip, Slip Rate, Shear Stress, and State using Plotly Resampler.
 
@@ -21,9 +122,9 @@ def main_plot(df, year_start, year_end, x_unit='years'):
     try:
         # Get unique datasets in the file
         datasets = df['dataset_name'].unique()
-
         # Generate color mapping for each dataset
         color_mapping = generate_color_mapping(datasets)
+
 
         # Create a resampling-aware figure with linked x-axes
         fig = FigureResampler(

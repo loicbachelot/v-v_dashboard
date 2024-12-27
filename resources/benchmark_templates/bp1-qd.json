@@ -1,0 +1,52 @@
+{
+  "name": "bp1-qd",
+  "files": [
+    {
+      "name": "time_series",
+      "content": "Time-series data",
+      "list_of_receivers": [
+        "*fltst_dp000",
+        "*fltst_dp025",
+        "*fltst_dp050",
+        "*fltst_dp075",
+        "*fltst_dp100",
+        "*fltst_dp125",
+        "*fltst_dp150",
+        "*fltst_dp175",
+        "*fltst_dp200",
+        "*fltst_dp250",
+        "*fltst_dp300",
+        "*fltst_dp350"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "slip",
+          "unit": "m",
+          "description": "slip"
+        },
+        {
+          "name": "slip_rate",
+          "unit": "log10 m/s",
+          "description": "slip rate"
+        },
+        {
+          "name": "shear_stress",
+          "unit": "MPa",
+          "description": "shear stress"
+        },
+        {
+          "name": "state",
+          "unit": "log10 s",
+          "description": "state"
+        }
+      ],
+      "prefix": "",
+      "file_type": "dat"
+    }
+  ]
+}

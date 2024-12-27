@@ -104,6 +104,7 @@ class DashboardStack(Stack):
             ],
         )
         s3_bucket.grant_read(task_role, "public_ds/*")
+        s3_bucket.grant_read(task_role, "benchmark_templates/*")
 
         # Define the ECS Task Definition using the Docker image from ECR
         task_definition = ecs.FargateTaskDefinition(
@@ -118,7 +119,7 @@ class DashboardStack(Stack):
         # Add a container to the task definition
         container = task_definition.add_container(
             "DashboardContainer",
-            image=ecs.ContainerImage.from_ecr_repository(repository),
+            image=ecs.ContainerImage.from_ecr_repository(repository, "2.0.0"),
             logging=ecs.LogDrivers.aws_logs(stream_prefix="DashboardApp"),
         )
         container.add_port_mappings(ecs.PortMapping(container_port=8050))
