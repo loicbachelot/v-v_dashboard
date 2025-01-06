@@ -203,9 +203,14 @@ def get_main_page():
                                                'width': '100%',
                                                'height': '85vh'},
                                         animate=False,
-                                        config={"displayModeBar": True,
-                                                "displaylogo": False,
-                                                "scrollZoom": True
+                                        config={'displayModeBar': True,
+                                                'displaylogo': False,
+                                                'scrollZoom': True,
+                                                'toImageButtonOptions': {
+                                                    'format': 'png',  # one of png, svg, jpeg, webp
+                                                    'filename': 'export_plots',
+                                                    'scale': 3  # Multiply title/legend/axis/canvas sizes by this factor
+                                                }
                                                 }
                                     ),
                                 ], type="default")

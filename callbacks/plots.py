@@ -61,12 +61,6 @@ def main_plot_dynamic(df, variable_list):
                 # Append data to the traces (resampling aware)
                 fig.data[-1].update({'x': group['t'], 'y': group[var['name']]})
 
-        # # Update axis titles dynamically
-        # for idx, var in enumerate(variable_list):
-        #     row = (idx // 2) + 1
-        #     col = (idx % 2) + 1
-        #     fig.update_yaxes(title_text=f"{var['description']} ({var['unit']})", row=row, col=col)
-
         # Update layout with title and shared x-axis range
         for idx in range(1, len(variable_list) + 1):
             row = (idx // 2) + 1
@@ -95,7 +89,7 @@ def main_plot_dynamic(df, variable_list):
             row = (idx // 2) + 1
             col = (idx % 2) + 1
             fig.add_trace(
-                go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines', name="test_name", showlegend=idx==0, legendgroup = "test_name"),
+                go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines', name="test_name", showlegend=idx==0, legendgroup = "code_name"),
                 row=row, col=col
             )
         fig.update_layout(
