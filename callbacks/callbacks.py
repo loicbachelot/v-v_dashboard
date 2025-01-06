@@ -22,13 +22,10 @@ def get_callbacks(app):
                       dash.dependencies.State('url', "search"),
                       dash.dependencies.State('upload-data', "contents"),
                       dash.dependencies.State('upload-data', 'filename'),
-                      # dash.dependencies.State('year-start', 'value'),
-                      # dash.dependencies.State('year-end', 'value'),
-                      # dash.dependencies.State('time-unit', 'value'),
+
                   ]
                   )
     def display_timeseries(ds_update_clicks, benchmark_params, file_type_name, dataset_list, receiver, benchmark_id, upload_data, filename,
-                           # year_start, year_end, time_unit
                            ):
         """
         Update the time-series graph based on user inputs.
@@ -122,7 +119,7 @@ def get_callbacks(app):
 
         # Check if a file link was clicked
         if "file-link" in triggered[0]['prop_id'] and triggered[0]['value']:
-            file_name = eval(triggered[0]['prop_id'].split('.')[0])['index']
+            file_name = eval(triggered[0]['prop_id'].rsplit('.', 1)[0])['index']
             # Fetch and format metadata
             metadata = get_metadata(benchmark_id, file_name)
             return metadata, True  # Open modal with metadata
