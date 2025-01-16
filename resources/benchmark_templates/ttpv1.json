@@ -1,0 +1,138 @@
+{
+  "name": "ttpv1",
+  "files": [
+    {
+      "name": "body",
+      "content": "receivers in the body, off-fault",
+      "list_of_receivers": [
+        "body010st000dp000",
+        "body010st100dp000",
+        "body030st000dp000",
+        "body090st000dp000",
+        "body090st100dp000",
+        "body090st200dp000",
+        "body150st000dp000",
+        "body210st000dp000",
+        "body270st000dp000",
+        "body270st100dp000",
+        "body270st200dp000",
+        "body330st000dp000",
+        "body390st000dp000",
+        "body450st000dp000",
+        "body450st100dp000",
+        "body450st200dp000"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "h-disp",
+          "unit": "m",
+          "description": "horizontal displacement"
+        },
+        {
+          "name": "h-vel",
+          "unit": "m/s",
+          "description": "horizontal velocity"
+        },
+        {
+          "name": "v-disp",
+          "unit": "m",
+          "description": "vertical displacement"
+        },
+        {
+          "name": "v-vel",
+          "unit": "m/s",
+          "description": "vertical velocity"
+        },
+        {
+          "name": "n-disp",
+          "unit": "m",
+          "description": "normal displacement"
+        },
+        {
+          "name": "n-vel",
+          "unit": "m/s",
+          "description": "normal velocity"
+        }
+      ],
+      "prefix": "body",
+      "file_type": "csv"
+    },
+    {
+      "name": "fault",
+      "content": "receivers on-fault",
+      "list_of_receivers": [
+        "faultst000dp000",
+        "faultst000dp010",
+        "faultst000dp030",
+        "faultst000dp060",
+        "faultst000dp120",
+        "faultst000dp180",
+        "faultst000dp240",
+        "faultst040dp000",
+        "faultst040dp030",
+        "faultst040dp060",
+        "faultst040dp120",
+        "faultst040dp180",
+        "faultst080dp000",
+        "faultst080dp030",
+        "faultst080dp060",
+        "faultst080dp120",
+        "faultst080dp180",
+        "faultst120dp000",
+        "faultst120dp030",
+        "faultst120dp060",
+        "faultst120dp120",
+        "faultst120dp180"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "h-slip",
+          "unit": "m",
+          "description": "horizontal (along-strike) slip"
+        },
+        {
+          "name": "h-slip-rate",
+          "unit": "m/s",
+          "description": "horizontal (along-strike) slip rate"
+        },
+        {
+          "name": "h-shear-stress",
+          "unit": "MPa",
+          "description": "horizontal (along-strike) shear stress"
+        },
+        {
+          "name": "v-slip",
+          "unit": "m",
+          "description": "along-dip slip"
+        },
+        {
+          "name": "v-slip-rate",
+          "unit": "m/s",
+          "description": "along-dip slip rate"
+        },
+        {
+          "name": "v-shear-stress",
+          "unit": "MPa",
+          "description": "along-dip shear stress"
+        },
+        {
+          "name": "n-stress",
+          "unit": "MPa",
+          "description": "normal stress"
+        }
+      ],
+      "prefix": "fault",
+      "file_type": "csv"
+    }
+  ]
+}
