@@ -2,7 +2,7 @@ import html
 import json
 import dash
 import pandas as pd
-from callbacks.plots import main_plot_dynamic
+from callbacks.plots import main_time_plot_dynamic
 from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark, get_metadata, get_benchmark_params, \
     get_plots_from_json
 from dash import html, callback_context, no_update
@@ -78,7 +78,7 @@ def get_callbacks(app):
             # end = 3000
             # xaxis_var = 'years'
             # plots_list = []
-        return main_plot_dynamic(ds_update, plots_list)
+        return main_time_plot_dynamic(ds_update, plots_list)
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID
     @app.callback(
