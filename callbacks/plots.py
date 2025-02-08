@@ -1,8 +1,6 @@
-
 from callbacks.utils import generate_color_mapping
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from plotly_resampler import FigureResampler
 
 
 def main_time_plot_dynamic(df, variable_list):
@@ -27,11 +25,10 @@ def main_time_plot_dynamic(df, variable_list):
         color_mapping = generate_color_mapping(datasets)
 
         fig = make_subplots(
-                rows=num_rows, cols=2, shared_xaxes=True,
-                subplot_titles=[f"{var['description']} ({var['unit']})" for var in variable_list],
-                vertical_spacing=0.1, horizontal_spacing=0.08
-            )
-
+            rows=num_rows, cols=2, shared_xaxes=True,
+            subplot_titles=[f"{var['description']} ({var['unit']})" for var in variable_list],
+            vertical_spacing=0.1, horizontal_spacing=0.08
+        )
 
         # Add traces (without data) and append data later using resampling
         for dataset_name, group in df.groupby('dataset_name'):
@@ -46,8 +43,8 @@ def main_time_plot_dynamic(df, variable_list):
                         mode='lines',
                         name=dataset_name,
                         line=dict(color=color),
-                        showlegend=idx==0,  # Show legend only for the first subplot
-                        legendgroup = dataset_name,
+                        showlegend=idx == 0,  # Show legend only for the first subplot
+                        legendgroup=dataset_name,
                     ),
                     row=row, col=col
                 )
@@ -72,18 +69,17 @@ def main_time_plot_dynamic(df, variable_list):
     except Exception as e:
         print(f"error plotting dataset: {e}")
         # Fallback plot in case of error
-        fig = FigureResampler(
-            make_subplots(
-                rows=num_rows, cols=2, shared_xaxes=True,
-                subplot_titles=[f"{var['description']} ({var['unit']})" for var in variable_list],
-                vertical_spacing=0.04, horizontal_spacing=0.05
-            )
+        fig = make_subplots(
+            rows=num_rows, cols=2, shared_xaxes=True,
+            subplot_titles=[f"{var['description']} ({var['unit']})" for var in variable_list],
+            vertical_spacing=0.04, horizontal_spacing=0.05
         )
         for idx, var in enumerate(variable_list):
             row = (idx // 2) + 1
             col = (idx % 2) + 1
             fig.add_trace(
-                go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines', name="test_name", showlegend=idx==0, legendgroup = "code_name"),
+                go.Scatter(x=[0, 1, 2, 3], y=[0, 1, 2, 3], mode='lines', name="test_name", showlegend=idx == 0,
+                           legendgroup="code_name"),
                 row=row, col=col
             )
         fig.update_layout(
