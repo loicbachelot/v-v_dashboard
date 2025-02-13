@@ -2,25 +2,25 @@
   "name": "ttpv1",
   "files": [
     {
-      "name": "body",
+      "name": "body_elastic_0",
       "content": "receivers in the body, off-fault",
       "list_of_receivers": [
-        "body010st000dp000",
-        "body010st100dp000",
-        "body030st000dp000",
-        "body090st000dp000",
-        "body090st100dp000",
-        "body090st200dp000",
-        "body150st000dp000",
-        "body210st000dp000",
-        "body270st000dp000",
-        "body270st100dp000",
-        "body270st200dp000",
-        "body330st000dp000",
-        "body390st000dp000",
-        "body450st000dp000",
-        "body450st100dp000",
-        "body450st200dp000"
+        "body_elastic_010st000dp000",
+        "body_elastic010st100dp000",
+        "body_elastic030st000dp000",
+        "body_elastic090st000dp000",
+        "body_elastic090st100dp000",
+        "body_elastic090st200dp000",
+        "body_elastic150st000dp000",
+        "body_elastic210st000dp000",
+        "body_elastic270st000dp000",
+        "body_elastic270st100dp000",
+        "body_elastic270st200dp000",
+        "body_elastic330st000dp000",
+        "body_elastic390st000dp000",
+        "body_elastic450st000dp000",
+        "body_elastic450st100dp000",
+        "body_elastic450st200dp000"
       ],
       "var_list": [
         {
@@ -59,7 +59,129 @@
           "description": "normal velocity"
         }
       ],
-      "prefix": "body",
+      "prefix": "body_elastic",
+      "file_type": "csv"
+    },
+    {
+      "name": "body_acoustic_floor",
+      "content": "receivers in the body, off-fault",
+      "list_of_receivers": [
+        "body_acoustic_floor010st000dp000",
+        "body_acoustic_floor010st100dp000",
+        "body_acoustic_floor030st000dp000",
+        "body_acoustic_floor090st000dp000",
+        "body_acoustic_floor090st100dp000",
+        "body_acoustic_floor090st200dp000",
+        "body_acoustic_floor150st000dp000",
+        "body_acoustic_floor210st000dp000",
+        "body_acoustic_floor270st000dp000",
+        "body_acoustic_floor270st100dp000",
+        "body_acoustic_floor270st200dp000",
+        "body_acoustic_floor330st000dp000",
+        "body_acoustic_floor390st000dp000",
+        "body_acoustic_floor450st000dp000",
+        "body_acoustic_floor450st100dp000",
+        "body_acoustic_floor450st200dp000"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "h-disp",
+          "unit": "m",
+          "description": "horizontal displacement"
+        },
+        {
+          "name": "h-vel",
+          "unit": "m/s",
+          "description": "horizontal velocity"
+        },
+        {
+          "name": "v-disp",
+          "unit": "m",
+          "description": "vertical displacement"
+        },
+        {
+          "name": "v-vel",
+          "unit": "m/s",
+          "description": "vertical velocity"
+        },
+        {
+          "name": "n-disp",
+          "unit": "m",
+          "description": "normal displacement"
+        },
+        {
+          "name": "n-vel",
+          "unit": "m/s",
+          "description": "normal velocity"
+        }
+      ],
+      "prefix": "body_acoustic_floor",
+      "file_type": "csv"
+    },
+    {
+      "name": "body_acoustic_surface",
+      "content": "receivers in the body, off-fault",
+      "list_of_receivers": [
+        "body_acoustic_surface010st000dp010",
+        "body_acoustic_surface010st100dp010",
+        "body_acoustic_surface030st000dp010",
+        "body_acoustic_surface090st000dp010",
+        "body_acoustic_surface090st100dp010",
+        "body_acoustic_surface090st200dp010",
+        "body_acoustic_surface150st000dp010",
+        "body_acoustic_surface210st000dp010",
+        "body_acoustic_surface270st000dp010",
+        "body_acoustic_surface270st100dp010",
+        "body_acoustic_surface270st200dp010",
+        "body_acoustic_surface330st000dp010",
+        "body_acoustic_surface390st000dp010",
+        "body_acoustic_surface450st000dp010",
+        "body_acoustic_surface450st100dp010",
+        "body_acoustic_surface450st200dp010"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "h-disp",
+          "unit": "m",
+          "description": "horizontal displacement"
+        },
+        {
+          "name": "h-vel",
+          "unit": "m/s",
+          "description": "horizontal velocity"
+        },
+        {
+          "name": "v-disp",
+          "unit": "m",
+          "description": "vertical displacement"
+        },
+        {
+          "name": "v-vel",
+          "unit": "m/s",
+          "description": "vertical velocity"
+        },
+        {
+          "name": "n-disp",
+          "unit": "m",
+          "description": "normal displacement"
+        },
+        {
+          "name": "n-vel",
+          "unit": "m/s",
+          "description": "normal velocity"
+        }
+      ],
+      "prefix": "body_acoustic_surface",
       "file_type": "csv"
     },
     {
@@ -132,6 +254,48 @@
         }
       ],
       "prefix": "fault",
+      "file_type": "csv"
+    },
+    {
+      "name": "surface",
+      "content": "surface vertical displacement",
+      "list_of_files": [
+        "surface_t000",
+        "surface_t030",
+        "surface_t060",
+        "surface_t090",
+        "surface_t120"
+      ],
+      "grid": {
+        "x": {
+          "min": -30000.0,
+          "max": 30000.0,
+          "n": 500
+        },
+        "y": {
+          "min": -15000.0,
+          "max": 50000.0,
+          "n": 500
+        }
+      },
+      "var_list": [
+        {
+          "name": "x",
+          "unit": "m",
+          "description": "distance along x"
+        },
+        {
+          "name": "y",
+          "unit": "m",
+          "description": "distance along y"
+        },
+        {
+          "name": "ssha",
+          "unit": "m",
+          "description": "sea surface height anomaly"
+        }
+      ],
+      "prefix": "surface",
       "file_type": "csv"
     }
   ]
