@@ -2,7 +2,7 @@ import html
 import json
 import dash
 import pandas as pd
-from callbacks.plots import main_time_plot_dynamic
+from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic
 from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark, get_metadata, get_benchmark_params, \
     get_plots_from_json
 from dash import html, callback_context, no_update
@@ -12,7 +12,7 @@ def get_callbacks(app):
     @app.callback(dash.dependencies.Output('time-series-graph', 'figure'),
                   [
                       dash.dependencies.Input('show-graphs', "n_clicks"),
-                      # dash.dependencies.Input('submit-button', 'n_clicks'),
+                      dash.dependencies.Input('submit-button-gc', 'n_clicks'),
                       dash.dependencies.Input('benchmark-params', 'data'),
                       dash.dependencies.Input('file-type-selector', "value"),
                   ],
@@ -22,11 +22,11 @@ def get_callbacks(app):
                       dash.dependencies.State('url', "search"),
                       dash.dependencies.State('upload-data', "contents"),
                       dash.dependencies.State('upload-data', 'filename'),
-
+                      dash.dependencies.State('surface-plot-type', 'value'),
                   ]
                   )
-    def display_timeseries(ds_update_clicks, benchmark_params, file_type_name, dataset_list, receiver, benchmark_id, upload_data, filename,
-                           ):
+    def display_plots(ds_update_clicks, gc_nclicks, benchmark_params, file_type_name, dataset_list, receiver,
+                      benchmark_id, upload_data, filename, surface_plot_type):
         """
         Update the time-series graph based on user inputs.
 
@@ -64,20 +64,11 @@ def get_callbacks(app):
                 ds_update = pd.concat(list_df)
             else:
                 ds_update = pd.DataFrame()
-
-            # start = 0
-            # end = 3000
-            # if year_start is not None and year_end is not None:
-            #     if 0 < year_start < year_end < 3000:
-            #         start = year_start
-            #         end = year_end
-            # xaxis_var = time_unit
         else:
             ds_update = pd.DataFrame()
-            # start = 0
-            # end = 3000
-            # xaxis_var = 'years'
-            # plots_list = []
+
+        if file_type_name == 'Tsunami':
+            return main_surface_plot_dynamic(ds_update, plots_list, surface_plot_type)
         return main_time_plot_dynamic(ds_update, plots_list)
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID

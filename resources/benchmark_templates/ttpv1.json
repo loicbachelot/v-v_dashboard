@@ -2,25 +2,43 @@
   "name": "ttpv1",
   "files": [
     {
-      "name": "body_elastic_0",
-      "content": "receivers in the body, off-fault",
+      "name": "body elastic seafloor",
+      "content": "receivers in the body elastic medium, seafloor, off-fault",
       "list_of_receivers": [
-        "body_elastic_010st000dp000",
-        "body_elastic010st100dp000",
-        "body_elastic030st000dp000",
-        "body_elastic090st000dp000",
-        "body_elastic090st100dp000",
-        "body_elastic090st200dp000",
-        "body_elastic150st000dp000",
-        "body_elastic210st000dp000",
-        "body_elastic270st000dp000",
-        "body_elastic270st100dp000",
-        "body_elastic270st200dp000",
-        "body_elastic330st000dp000",
-        "body_elastic390st000dp000",
-        "body_elastic450st000dp000",
-        "body_elastic450st100dp000",
-        "body_elastic450st200dp000"
+        "el_sf_body-010st000",
+        "el_sf_body-010st100",
+        "el_sf_body-030st000",
+        "el_sf_body-030st100",
+        "el_sf_body-090st000",
+        "el_sf_body-090st100",
+        "el_sf_body-090st200",
+        "el_sf_body-150st000",
+        "el_sf_body-150st100",
+        "el_sf_body-150st200",
+        "el_sf_body-210st000",
+        "el_sf_body-210st100",
+        "el_sf_body-210st200",
+        "el_sf_body010st000",
+        "el_sf_body010st100",
+        "el_sf_body030st000",
+        "el_sf_body030st100",
+        "el_sf_body090st000",
+        "el_sf_body090st100",
+        "el_sf_body090st200",
+        "el_sf_body150st000",
+        "el_sf_body150st100",
+        "el_sf_body210st000",
+        "el_sf_body210st100",
+        "el_sf_body270st000",
+        "el_sf_body270st100",
+        "el_sf_body270st200",
+        "el_sf_body330st000",
+        "el_sf_body390st000",
+        "el_sf_body450st000",
+        "el_sf_body450st100",
+        "el_sf_body450st200",
+        "el_sf_body510st000",
+        "el_sf_body570st000"
       ],
       "var_list": [
         {
@@ -57,31 +75,59 @@
           "name": "n-vel",
           "unit": "m/s",
           "description": "normal velocity"
+        },
+        {
+          "name": "e_xx",
+          "unit": "",
+          "description": "longitudinal strain in x-direction"
+        },
+        {
+          "name": "e_yy",
+          "unit": "",
+          "description": "longitudinal strain in x-direction"
         }
       ],
-      "prefix": "body_elastic",
+      "prefix": "el_sf_body",
       "file_type": "csv"
     },
     {
-      "name": "body_acoustic_floor",
+      "name": "body acoustic seafloor",
       "content": "receivers in the body, off-fault",
       "list_of_receivers": [
-        "body_acoustic_floor010st000dp000",
-        "body_acoustic_floor010st100dp000",
-        "body_acoustic_floor030st000dp000",
-        "body_acoustic_floor090st000dp000",
-        "body_acoustic_floor090st100dp000",
-        "body_acoustic_floor090st200dp000",
-        "body_acoustic_floor150st000dp000",
-        "body_acoustic_floor210st000dp000",
-        "body_acoustic_floor270st000dp000",
-        "body_acoustic_floor270st100dp000",
-        "body_acoustic_floor270st200dp000",
-        "body_acoustic_floor330st000dp000",
-        "body_acoustic_floor390st000dp000",
-        "body_acoustic_floor450st000dp000",
-        "body_acoustic_floor450st100dp000",
-        "body_acoustic_floor450st200dp000"
+        "ac_sf_body-010st000",
+        "ac_sf_body-010st100",
+        "ac_sf_body-030st000",
+        "ac_sf_body-030st100",
+        "ac_sf_body-090st000",
+        "ac_sf_body-090st100",
+        "ac_sf_body-090st200",
+        "ac_sf_body-150st000",
+        "ac_sf_body-150st100",
+        "ac_sf_body-150st200",
+        "ac_sf_body-210st000",
+        "ac_sf_body-210st100",
+        "ac_sf_body-210st200",
+        "ac_sf_body010st000",
+        "ac_sf_body010st100",
+        "ac_sf_body030st000",
+        "ac_sf_body030st100",
+        "ac_sf_body090st000",
+        "ac_sf_body090st100",
+        "ac_sf_body090st200",
+        "ac_sf_body150st000",
+        "ac_sf_body150st100",
+        "ac_sf_body210st000",
+        "ac_sf_body210st100",
+        "ac_sf_body270st000",
+        "ac_sf_body270st100",
+        "ac_sf_body270st200",
+        "ac_sf_body330st000",
+        "ac_sf_body390st000",
+        "ac_sf_body450st000",
+        "ac_sf_body450st100",
+        "ac_sf_body450st200",
+        "ac_sf_body510st000",
+        "ac_sf_body570st000"
       ],
       "var_list": [
         {
@@ -118,31 +164,54 @@
           "name": "n-vel",
           "unit": "m/s",
           "description": "normal velocity"
+        },
+        {
+          "name": "p",
+          "unit": "Pa",
+          "description": "pressure"
         }
       ],
-      "prefix": "body_acoustic_floor",
+      "prefix": "ac_sf_body",
       "file_type": "csv"
     },
     {
-      "name": "body_acoustic_surface",
-      "content": "receivers in the body, off-fault",
+      "name": "body acoustic sea surface",
+      "content": "receivers in the body, off-fault, sea surface",
       "list_of_receivers": [
-        "body_acoustic_surface010st000dp010",
-        "body_acoustic_surface010st100dp010",
-        "body_acoustic_surface030st000dp010",
-        "body_acoustic_surface090st000dp010",
-        "body_acoustic_surface090st100dp010",
-        "body_acoustic_surface090st200dp010",
-        "body_acoustic_surface150st000dp010",
-        "body_acoustic_surface210st000dp010",
-        "body_acoustic_surface270st000dp010",
-        "body_acoustic_surface270st100dp010",
-        "body_acoustic_surface270st200dp010",
-        "body_acoustic_surface330st000dp010",
-        "body_acoustic_surface390st000dp010",
-        "body_acoustic_surface450st000dp010",
-        "body_acoustic_surface450st100dp010",
-        "body_acoustic_surface450st200dp010"
+        "ac_ss_body-010st000",
+        "ac_ss_body-010st100",
+        "ac_ss_body-030st000",
+        "ac_ss_body-030st100",
+        "ac_ss_body-090st000",
+        "ac_ss_body-090st100",
+        "ac_ss_body-090st200",
+        "ac_ss_body-150st000",
+        "ac_ss_body-150st100",
+        "ac_ss_body-150st200",
+        "ac_ss_body-210st000",
+        "ac_ss_body-210st100",
+        "ac_ss_body-210st200",
+        "ac_ss_body010st000",
+        "ac_ss_body010st100",
+        "ac_ss_body030st000",
+        "ac_ss_body030st100",
+        "ac_ss_body090st000",
+        "ac_ss_body090st100",
+        "ac_ss_body090st200",
+        "ac_ss_body150st000",
+        "ac_ss_body150st100",
+        "ac_ss_body210st000",
+        "ac_ss_body210st100",
+        "ac_ss_body270st000",
+        "ac_ss_body270st100",
+        "ac_ss_body270st200",
+        "ac_ss_body330st000",
+        "ac_ss_body390st000",
+        "ac_ss_body450st000",
+        "ac_ss_body450st100",
+        "ac_ss_body450st200",
+        "ac_ss_body510st000",
+        "ac_ss_body570st000"
       ],
       "var_list": [
         {
@@ -179,9 +248,14 @@
           "name": "n-vel",
           "unit": "m/s",
           "description": "normal velocity"
+        },
+        {
+          "name": "p",
+          "unit": "Pa",
+          "description": "pressure"
         }
       ],
-      "prefix": "body_acoustic_surface",
+      "prefix": "ac_ss_body",
       "file_type": "csv"
     },
     {
@@ -257,25 +331,24 @@
       "file_type": "csv"
     },
     {
-      "name": "surface",
-      "content": "surface vertical displacement",
-      "list_of_files": [
-        "surface_t000",
-        "surface_t030",
-        "surface_t060",
-        "surface_t090",
-        "surface_t120"
+      "name": "Tsunami",
+      "content": "Tsunami sea surface height anomaly",
+      "list_of_receivers": [
+        "tsunami030s",
+        "tsunami060s",
+        "tsunami090s",
+        "tsunami120s"
       ],
       "grid": {
         "x": {
-          "min": -30000.0,
-          "max": 30000.0,
-          "n": 500
+          "min": -100000.0,
+          "max": 100000.0,
+          "n": 1000
         },
         "y": {
-          "min": -15000.0,
-          "max": 50000.0,
-          "n": 500
+          "min": -100000.0,
+          "max": 100000.0,
+          "n": 1000
         }
       },
       "var_list": [
@@ -295,7 +368,7 @@
           "description": "sea surface height anomaly"
         }
       ],
-      "prefix": "surface",
+      "prefix": "tsunami",
       "file_type": "csv"
     }
   ]
