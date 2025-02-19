@@ -98,7 +98,7 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
     df (pd.DataFrame): DataFrame containing the dataset.
     variable_list (list): List of dictionaries with keys 'name', 'unit', and 'description'.
     Returns:
-    FigureResampler: Plotly figure object with dynamic resampling enabled.
+    Plotly figure object
     """
     try:
         # Calculate the number of rows needed for a 2-column layout
@@ -112,55 +112,80 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
 
         # Get unique datasets in the file
         datasets = df['dataset_name'].unique()
-        # max_abs_value = np.max(np.abs(df['ssha']))
         max_abs_value = 0.5
+
         fig = make_subplots(
-            rows=num_rows, cols=num_cols, shared_xaxes=True,
-            subplot_titles=[f"Dataset: {name}" for name in df['dataset_name'].unique()],
+            rows=num_rows, cols=num_cols,
+            specs=[[{'type': 'surface' if plot_type == "3d_surface" else 'heatmap'} for _ in range(num_cols)] for _ in
+                   range(num_rows)],
+            subplot_titles=[f"Dataset: {name}" for name in datasets],
             vertical_spacing=0.1, horizontal_spacing=0.08
         )
 
+        for i, dataset_name in enumerate(datasets):
+            row = (i // num_cols) + 1
+            col = (i % num_cols) + 1
+
+            dataset_df = df[df['dataset_name'] == dataset_name]
+
+            if plot_type == "3d_surface":
+                v_disp_2d = dataset_df['ssha'].values.reshape(
+                    (len(dataset_df['x'].unique()), len(dataset_df['y'].unique())))
+
+                fig.add_trace(go.Surface(
+                    x=dataset_df['x'].unique(),
+                    y=dataset_df['y'].unique(),
+                    z=v_disp_2d,
+                    colorscale='RdBu_r',  # Reversed RdBu colormap
+                    cmin=-max_abs_value,  # Center colorbar on 0
+                    cmax=max_abs_value,  # Symmetric range
+                    colorbar=dict(title="ssha (m)")
+                ), row=row, col=col)
+
+                # Update the scene for each subplot
+                scene_key = f'scene{i + 1}' if i > 0 else 'scene'
+                fig.update_layout({
+                    scene_key: dict(
+                        xaxis=dict(title='x (m)'),
+                        yaxis=dict(title='y (m)'),
+                        zaxis=dict(title='ssha (m)')
+                    )
+                })
+
+            elif plot_type == "heatmap":
+                fig.add_trace(go.Heatmap(
+                    x=dataset_df['x'],  # x-axis grid points
+                    y=dataset_df['y'],  # z-axis grid points
+                    z=dataset_df['ssha'],  # Gridded v-disp values
+                    zmin=-max_abs_value,  # Center colorbar on 0
+                    zmax=max_abs_value,  # Symmetric range
+                    zsmooth=False,
+                    colorscale='RdBu_r',  # Reversed RdBu colormap
+                    colorbar=dict(title='ssha (m)')  # Add a colorbar with a title
+                ), row=row, col=col)
+
+                # Update the axes for each subplot
+                xaxis_key = f'xaxis{i + 1}' if i > 0 else 'xaxis'
+                yaxis_key = f'yaxis{i + 1}' if i > 0 else 'yaxis'
+                fig.update_layout({
+                    xaxis_key: dict(title='x (m)'),
+                    yaxis_key: dict(title='y (m)')
+                })
+
+        # Global layout updates
         if plot_type == "3d_surface":
-            v_disp_2d = df['ssha'].values.reshape((len(df['x'].unique()), len(df['y'].unique())))
-
-            # Create the surface plot with centered colorbar
-            fig.add_trace(go.Surface(
-                x=df['x'].unique(),
-                y=df['y'].unique(),
-                z=v_disp_2d,
-                colorscale='RdBu_r',  # Reversed RdBu colormap
-                cmin=-max_abs_value,  # Center colorbar on 0
-                cmax=max_abs_value,  # Symmetric range
-                colorbar=dict(title="ssha")  # Optional: Add colorbar title
-            ))
-
-            # Update layout
             fig.update_layout(
                 title='Surface Plot of x vs y colored by ssha (Regridded Data)',
-                scene=dict(
-                    xaxis=dict(title='x'),
-                    yaxis=dict(title='z'),
-                    zaxis=dict(title='ssha')
-                ),
-            )
-        elif plot_type == "heatmap":
-            fig.add_trace(go.Heatmap(
-                x=df['x'],  # x-axis grid points
-                y=df['y'],  # z-axis grid points
-                z=df['ssha'],  # Gridded v-disp values
-                zmin=-max_abs_value,  # Center colorbar on 0
-                zmax=max_abs_value,  # Symmetric range
-                colorscale='RdBu_r',  # Reversed RdBu colormap
-                colorbar=dict(title='ssha')  # Add a colorbar with a title
-            ))
-
-            # Update layout
-            fig.update_layout(
-                title='Heatmap of x vs z colored by SSHA (Regridded Data)',
-                xaxis=dict(title='x'),
-                yaxis=dict(title='y'),
                 template='plotly_white'
             )
+        elif plot_type == "heatmap":
+            fig.update_layout(
+                title='Heatmap of x vs z colored by SSHA (Regridded Data)',
+                template='plotly_white'
+            )
+            fig.update_xaxes(matches='x')
+            fig.update_yaxes(matches='y')
+
 
     except Exception as e:
         print(f"error plotting dataset: {e}")
@@ -182,6 +207,7 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
             colorscale='RdBu_r',  # Reversed RdBu colormap
             cmin=-max_abs_value,  # Center colorbar on 0
             cmax=max_abs_value,  # Symmetric range
-            colorbar=dict(title="ssha")  # Optional: Add colorbar title
+            colorbar=dict(title="ssha (m)")  # Optional: Add colorbar title
         ))
+
     return fig

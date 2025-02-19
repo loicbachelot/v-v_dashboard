@@ -78,13 +78,13 @@
         },
         {
           "name": "e_xx",
-          "unit": "",
+          "unit": "-",
           "description": "longitudinal strain in x-direction"
         },
         {
           "name": "e_yy",
-          "unit": "",
-          "description": "longitudinal strain in x-direction"
+          "unit": "-",
+          "description": "longitudinal strain in y-direction"
         }
       ],
       "prefix": "el_sf_body",
