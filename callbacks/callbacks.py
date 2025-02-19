@@ -51,6 +51,7 @@ def get_callbacks(app):
                 }
             }
         list_df = []
+        plot_type = next((file['graph_type'] for file in benchmark_params['files'] if file['name'] == file_type_name), None)
         plots_list = get_plots_from_json(benchmark_params, file_type_name)
         if ds_update_clicks is not None:
             selected_df = get_df(benchmark_id, dataset_list, receiver)
@@ -67,8 +68,8 @@ def get_callbacks(app):
         else:
             ds_update = pd.DataFrame()
 
-        if file_type_name == 'Tsunami':
-            return main_surface_plot_dynamic(ds_update, plots_list, surface_plot_type)
+        if plot_type == 'surface':
+            return main_surface_plot_dynamic(ds_update, plots_list[0], surface_plot_type)
         return main_time_plot_dynamic(ds_update, plots_list)
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID

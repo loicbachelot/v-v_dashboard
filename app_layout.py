@@ -162,7 +162,7 @@ def get_main_page():
                                                                         {"label": "3D surface", "value": "3d_surface"},
                                                                         {"label": "Heatmap", "value": "heatmap"},
                                                                     ],
-                                                                    value="heatmap"
+                                                                    value="3d_surface"
                                                                 ),
                                                                 dbc.Button("submit",
                                                                            id='submit-button-gc',

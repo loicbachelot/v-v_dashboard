@@ -90,13 +90,13 @@ def main_time_plot_dynamic(df, variable_list):
     return fig
 
 
-def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
+def main_surface_plot_dynamic(df, variable_dict, plot_type="3d_surface"):
     """
     Generate a dynamic plot with subplots based on a list of variable dictionaries.
 
     Parameters:
     df (pd.DataFrame): DataFrame containing the dataset.
-    variable_list (list): List of dictionaries with keys 'name', 'unit', and 'description'.
+    variable_dict (list): dictionaries with keys 'name', 'unit', and 'description'.
     Returns:
     Plotly figure object
     """
@@ -129,7 +129,7 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
             dataset_df = df[df['dataset_name'] == dataset_name]
 
             if plot_type == "3d_surface":
-                v_disp_2d = dataset_df['ssha'].values.reshape(
+                v_disp_2d = dataset_df[variable_dict['name']].values.reshape(
                     (len(dataset_df['x'].unique()), len(dataset_df['y'].unique())))
 
                 fig.add_trace(go.Surface(
@@ -139,7 +139,7 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
                     colorscale='RdBu_r',  # Reversed RdBu colormap
                     cmin=-max_abs_value,  # Center colorbar on 0
                     cmax=max_abs_value,  # Symmetric range
-                    colorbar=dict(title="ssha (m)")
+                    colorbar=dict(title=f"{variable_dict['name']} ({variable_dict['unit']})")
                 ), row=row, col=col)
 
                 # Update the scene for each subplot
@@ -148,7 +148,7 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
                     scene_key: dict(
                         xaxis=dict(title='x (m)'),
                         yaxis=dict(title='y (m)'),
-                        zaxis=dict(title='ssha (m)')
+                        zaxis=dict(title=f"{variable_dict['name']} ({variable_dict['unit']})")
                     )
                 })
 
@@ -156,12 +156,12 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
                 fig.add_trace(go.Heatmap(
                     x=dataset_df['x'],  # x-axis grid points
                     y=dataset_df['y'],  # z-axis grid points
-                    z=dataset_df['ssha'],  # Gridded v-disp values
+                    z=dataset_df[variable_dict['name']],  # Gridded v-disp values
                     zmin=-max_abs_value,  # Center colorbar on 0
                     zmax=max_abs_value,  # Symmetric range
                     zsmooth=False,
                     colorscale='RdBu_r',  # Reversed RdBu colormap
-                    colorbar=dict(title='ssha (m)')  # Add a colorbar with a title
+                    colorbar=dict(title=f"{variable_dict['name']} ({variable_dict['unit']})")  # Add a colorbar with a title
                 ), row=row, col=col)
 
                 # Update the axes for each subplot
@@ -180,7 +180,7 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
             )
         elif plot_type == "heatmap":
             fig.update_layout(
-                title='Heatmap of x vs z colored by SSHA (Regridded Data)',
+                title='Heatmap of x vs y colored by SSHA (Regridded Data)',
                 template='plotly_white'
             )
             fig.update_xaxes(matches='x')
@@ -207,7 +207,7 @@ def main_surface_plot_dynamic(df, variable_list, plot_type="3d_surface"):
             colorscale='RdBu_r',  # Reversed RdBu colormap
             cmin=-max_abs_value,  # Center colorbar on 0
             cmax=max_abs_value,  # Symmetric range
-            colorbar=dict(title="ssha (m)")  # Optional: Add colorbar title
+            colorbar=dict(title=f"{variable_dict['name']} ({variable_dict['unit']})")  # Optional: Add colorbar title
         ))
 
     return fig

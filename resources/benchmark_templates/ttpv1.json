@@ -4,6 +4,7 @@
     {
       "name": "body elastic seafloor",
       "content": "receivers in the body elastic medium, seafloor, off-fault",
+      "graph_type": "timeseries",
       "list_of_receivers": [
         "el_sf_body-010st000",
         "el_sf_body-010st100",
@@ -93,6 +94,7 @@
     {
       "name": "body acoustic seafloor",
       "content": "receivers in the body, off-fault",
+      "graph_type": "timeseries",
       "list_of_receivers": [
         "ac_sf_body-010st000",
         "ac_sf_body-010st100",
@@ -177,6 +179,7 @@
     {
       "name": "body acoustic sea surface",
       "content": "receivers in the body, off-fault, sea surface",
+      "graph_type": "timeseries",
       "list_of_receivers": [
         "ac_ss_body-010st000",
         "ac_ss_body-010st100",
@@ -261,6 +264,7 @@
     {
       "name": "fault",
       "content": "receivers on-fault",
+      "graph_type": "timeseries",
       "list_of_receivers": [
         "faultst000dp000",
         "faultst000dp010",
@@ -333,6 +337,7 @@
     {
       "name": "Tsunami",
       "content": "Tsunami sea surface height anomaly",
+      "graph_type": "surface",
       "list_of_receivers": [
         "tsunami030s",
         "tsunami060s",
