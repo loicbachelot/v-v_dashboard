@@ -4,6 +4,7 @@
     {
       "name": "time_series",
       "content": "Time-series data",
+      "graph_type": "timeseries",
       "list_of_receivers": [
         "*fltst_dp000",
         "*fltst_dp025",

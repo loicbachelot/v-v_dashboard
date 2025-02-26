@@ -12,3 +12,4 @@ pyarrow~=18.1.0
 awswrangler~=3.9.1
 scipy>=1.15.1
 matplotlib
+flask_caching

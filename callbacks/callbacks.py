@@ -1,5 +1,4 @@
 import html
-import json
 import dash
 import pandas as pd
 from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic
@@ -217,3 +216,24 @@ def get_callbacks(app):
             if file['name'] == file_selected:
                 return file['list_of_receivers'], ''
         return no_update
+
+    @app.callback(
+        dash.dependencies.Output('graph-control-surface', 'style'),
+        dash.dependencies.Output('graph-control-time', 'style'),
+        [dash.dependencies.Input('file-type-selector', 'value')],
+        [dash.dependencies.State('benchmark-params', 'data')]
+    )
+    def update_receiver_selector(file_selected, benchmark_params):
+        graph_type = ''
+        if benchmark_params is None:
+            return no_update
+        if file_selected is None:
+            return no_update
+        for file in benchmark_params['files']:
+            if file['name'] == file_selected:
+                graph_type = file['graph_type']
+
+        if graph_type == "surface":
+            return {"display": "block"}, {"display": "none"}
+        else:
+            return {"display": "none"}, {"display": "block"}

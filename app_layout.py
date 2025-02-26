@@ -26,7 +26,7 @@ def get_main_page():
                         ),
                         dbc.Col(
                             html.H1(
-                                "V&V Dashboard",
+                                "Code Verification Platform",
                                 style={
                                     'textAlign': 'center',
                                     'color': 'white'
@@ -128,23 +128,23 @@ def get_main_page():
                                                         html.Div([html.H5(
                                                             "List selected datasets, click for information:",
                                                             style={'color': '#000000'}),
-                                                                  html.Div(id='links-container'),  # Container for links
-                                                                  # Bootstrap modal
-                                                                  dbc.Modal(
-                                                                      [
-                                                                          dbc.ModalHeader(
-                                                                              dbc.ModalTitle("File Metadata")),
-                                                                          dbc.ModalBody(html.Pre(id='popup-content')),
-                                                                          # JSON content display
-                                                                          dbc.ModalFooter(
-                                                                              dbc.Button("Close", id="close-popup",
-                                                                                         className="ms-auto",
-                                                                                         n_clicks=0)
-                                                                          ),
-                                                                      ],
-                                                                      id="popup-modal",
-                                                                      is_open=False,
-                                                                  ), ])
+                                                            html.Div(id='links-container'),  # Container for links
+                                                            # Bootstrap modal
+                                                            dbc.Modal(
+                                                                [
+                                                                    dbc.ModalHeader(
+                                                                        dbc.ModalTitle("File Metadata")),
+                                                                    dbc.ModalBody(html.Pre(id='popup-content')),
+                                                                    # JSON content display
+                                                                    dbc.ModalFooter(
+                                                                        dbc.Button("Close", id="close-popup",
+                                                                                   className="ms-auto",
+                                                                                   n_clicks=0)
+                                                                    ),
+                                                                ],
+                                                                id="popup-modal",
+                                                                is_open=False,
+                                                            ), ])
                                                     ]
                                                     )
                                                 ]
@@ -153,6 +153,7 @@ def get_main_page():
                                         dcc.Tab(label='Graph control', value='tab-graphcontrol',
                                                 children=[
                                                     dbc.Row(
+                                                        id='graph-control-surface',
                                                         children=[
                                                             dbc.Col(children=[
                                                                 dbc.Label("surface plot type"),
@@ -162,7 +163,7 @@ def get_main_page():
                                                                         {"label": "3D surface", "value": "3d_surface"},
                                                                         {"label": "Heatmap", "value": "heatmap"},
                                                                     ],
-                                                                    value="3d_surface"
+                                                                    value="heatmap"
                                                                 ),
                                                                 dbc.Button("submit",
                                                                            id='submit-button-gc',
@@ -175,9 +176,18 @@ def get_main_page():
                                                             ]
                                                             )
                                                         ],
-                                                    )
-                                                ]
-                                                ),
+                                                        style={"display": "none"}
+                                                    ),
+                                                    dbc.Row(
+                                                        id='graph-control-time',
+                                                        children=[
+                                                            dbc.Col(
+                                                                dbc.Label("No graph control for this plot type")
+                                                            )
+                                                        ],
+                                                        style={"display": "none"}
+                                                    ),
+                                                ])
                                     ]
                                              ),
                                 ],
@@ -198,7 +208,8 @@ def get_main_page():
                                                 'toImageButtonOptions': {
                                                     'format': 'png',  # one of png, svg, jpeg, webp
                                                     'filename': 'export_plots',
-                                                    'scale': 3  # Multiply title/legend/axis/canvas sizes by this factor
+                                                    'scale': 3
+                                                    # Multiply title/legend/axis/canvas sizes by this factor
                                                 }
                                                 }
                                     ),
