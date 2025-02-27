@@ -1,17 +1,21 @@
 import html
 import dash
 import pandas as pd
-from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic
+import plotly.graph_objects as go
+
+from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic_v2
 from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark, get_metadata, get_benchmark_params, \
     get_plots_from_json
-from dash import html, callback_context, no_update
+from dash import html, ctx, no_update
 
 
 def get_callbacks(app):
     @app.callback(dash.dependencies.Output('time-series-graph', 'figure'),
                   [
+                      dash.dependencies.Input('time-series-graph', 'figure'),
                       dash.dependencies.Input('show-graphs', "n_clicks"),
-                      dash.dependencies.Input('submit-button-gc', 'n_clicks'),
+                      dash.dependencies.Input('slider-gc-surface', 'value'),
+                      dash.dependencies.Input('surface-plot-type', 'value'),
                       dash.dependencies.Input('benchmark-params', 'data'),
                       dash.dependencies.Input('file-type-selector', "value"),
                   ],
@@ -21,11 +25,10 @@ def get_callbacks(app):
                       dash.dependencies.State('url', "search"),
                       dash.dependencies.State('upload-data', "contents"),
                       dash.dependencies.State('upload-data', 'filename'),
-                      dash.dependencies.State('surface-plot-type', 'value'),
                   ]
                   )
-    def display_plots(ds_update_clicks, gc_nclicks, benchmark_params, file_type_name, dataset_list, receiver,
-                      benchmark_id, upload_data, filename, surface_plot_type):
+    def display_plots(current_fig, ds_update_clicks, slider_gc_surface, surface_plot_type, benchmark_params, file_type_name, dataset_list, receiver,
+                      benchmark_id, upload_data, filename):
         """
         Update the time-series graph based on user inputs.
 
@@ -49,6 +52,7 @@ def get_callbacks(app):
                     "yaxis": {"title": "Value"},
                 }
             }
+
         list_df = []
         plot_type = next((file['graph_type'] for file in benchmark_params['files'] if file['name'] == file_type_name), None)
         plots_list = get_plots_from_json(benchmark_params, file_type_name)
@@ -68,7 +72,15 @@ def get_callbacks(app):
             ds_update = pd.DataFrame()
 
         if plot_type == 'surface':
-            return main_surface_plot_dynamic(ds_update, plots_list[0], surface_plot_type)
+            # check trigger to prevent full update if just slider from surface
+            trigger = ctx.triggered_id
+            if trigger == "slider-gc-surface":
+                fig = go.Figure(current_fig)
+                slider_only = True
+            else:
+                fig = go.Figure()
+                slider_only = False
+            return main_surface_plot_dynamic_v2(ds_update, fig, plots_list[0], surface_plot_type, slider_gc_surface, slider_only)
         return main_time_plot_dynamic(ds_update, plots_list)
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID
@@ -103,7 +115,7 @@ def get_callbacks(app):
         prevent_initial_call=True
     )
     def handle_modal(file_clicks, close_click, is_open, benchmark_id):
-        triggered = callback_context.triggered
+        triggered = ctx.triggered
         # Debug: Check what triggered the callback
         if not triggered:
             return "", False  # No valid trigger, return modal closed.

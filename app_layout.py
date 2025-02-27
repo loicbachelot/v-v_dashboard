@@ -163,16 +163,9 @@ def get_main_page():
                                                                         {"label": "3D surface", "value": "3d_surface"},
                                                                         {"label": "Heatmap", "value": "heatmap"},
                                                                     ],
-                                                                    value="heatmap"
+                                                                    value="3d_surface"
                                                                 ),
-                                                                dbc.Button("submit",
-                                                                           id='submit-button-gc',
-                                                                           n_clicks=0,
-                                                                           color="primary",
-                                                                           style={'marginBottom': '10px',
-                                                                                  'marginLeft': '10px'}
-
-                                                                           ),
+                                                                dcc.Slider(id='slider-gc-surface', min=-10000, max=10000, step=2000, value=0),  # For cross-section update
                                                             ]
                                                             )
                                                         ],
