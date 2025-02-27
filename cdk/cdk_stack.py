@@ -119,7 +119,7 @@ class DashboardStack(Stack):
         # Add a container to the task definition
         container = task_definition.add_container(
             "DashboardContainer",
-            image=ecs.ContainerImage.from_ecr_repository(repository, "2.0.0"),
+            image=ecs.ContainerImage.from_ecr_repository(repository, "2.0.5"),
             logging=ecs.LogDrivers.aws_logs(stream_prefix="DashboardApp"),
         )
         container.add_port_mappings(ecs.PortMapping(container_port=8050))
@@ -179,7 +179,7 @@ class DashboardStack(Stack):
             function_name="process_uploads",
             code=_lambda.DockerImageCode.from_ecr(
                 repository=repo,
-                tag="2.1.2",
+                tag="2.0.3",
             ),
             timeout=Duration.minutes(5),
             memory_size=2048,

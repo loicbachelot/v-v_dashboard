@@ -10,9 +10,39 @@ from concurrent.futures import ThreadPoolExecutor
 import awswrangler as wr
 from dash import html
 
+# Global variable to store the cache object
+cache = None
+
+def set_cache(cache_obj):
+    """Set the cache object for use in this module."""
+    global cache
+    cache = cache_obj
+
+def memoize(timeout=None):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if cache is None:
+                raise ValueError("Cache object is not initialized. Call set_cache() first.")
+
+            # Generate a cache key based on the function name and arguments
+            cache_key = f"{func.__name__}_{str(args)}_{str(kwargs)}"
+
+            # Check if the data is already in the cache
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                print(f"Retrieving data from cache for key: {cache_key}")
+                return cached_data
+
+            # If not in cache, fetch the data and cache it
+            print(f"Fetching data from S3 for key: {cache_key}")
+            result = func(*args, **kwargs)
+            cache.set(cache_key, result, timeout=timeout)
+            return result
+        return wrapper
+    return decorator
+
 # Create a global S3 client for reuse across function calls
 s3_client = boto3.client('s3')
-
 
 # Helper function to parse the benchmark_id from the URL
 def parse_benchmark_id(search):
@@ -20,6 +50,7 @@ def parse_benchmark_id(search):
     return query_params.get('benchmark_id', [''])[0]  # Return first value or empty string
 
 
+@memoize(timeout=3600)  # Cache for 1h
 def get_s3_dataset(bucket_name, s3_key):
     """Fetch a single S3 object and return a DataFrame."""
     try:
@@ -86,7 +117,7 @@ def get_plots_from_json(json_data, file_name):
     for file_info in json_data['files']:
         if file_info['name'] == file_name:
             for var in file_info['var_list']:
-                if var['name'] != 't':  # Exclude "time" itself
+                if var['name'] not in ['t', 'x', 'y']:  # Exclude "time", "x" and "y"
                     plots.append(var)
     return plots
 
@@ -144,6 +175,7 @@ async def fetch_data_concurrently(bucket_name, benchmark_id, list_df, receiver):
                 tmp_df['dataset_name'] = f"{file_name}_rec{receiver}"
                 all_data.append(tmp_df)
     return pd.concat(all_data) if all_data else None
+
 
 
 def get_df(benchmark_id, list_df, receiver):

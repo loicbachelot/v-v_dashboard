@@ -2,25 +2,44 @@
   "name": "ttpv1",
   "files": [
     {
-      "name": "body",
-      "content": "receivers in the body, off-fault",
+      "name": "body elastic seafloor",
+      "content": "receivers in the body elastic medium, seafloor, off-fault",
+      "graph_type": "timeseries",
       "list_of_receivers": [
-        "body010st000dp000",
-        "body010st100dp000",
-        "body030st000dp000",
-        "body090st000dp000",
-        "body090st100dp000",
-        "body090st200dp000",
-        "body150st000dp000",
-        "body210st000dp000",
-        "body270st000dp000",
-        "body270st100dp000",
-        "body270st200dp000",
-        "body330st000dp000",
-        "body390st000dp000",
-        "body450st000dp000",
-        "body450st100dp000",
-        "body450st200dp000"
+        "el_sf_body-010st000",
+        "el_sf_body-010st100",
+        "el_sf_body-030st000",
+        "el_sf_body-030st100",
+        "el_sf_body-090st000",
+        "el_sf_body-090st100",
+        "el_sf_body-090st200",
+        "el_sf_body-150st000",
+        "el_sf_body-150st100",
+        "el_sf_body-150st200",
+        "el_sf_body-210st000",
+        "el_sf_body-210st100",
+        "el_sf_body-210st200",
+        "el_sf_body010st000",
+        "el_sf_body010st100",
+        "el_sf_body030st000",
+        "el_sf_body030st100",
+        "el_sf_body090st000",
+        "el_sf_body090st100",
+        "el_sf_body090st200",
+        "el_sf_body150st000",
+        "el_sf_body150st100",
+        "el_sf_body210st000",
+        "el_sf_body210st100",
+        "el_sf_body270st000",
+        "el_sf_body270st100",
+        "el_sf_body270st200",
+        "el_sf_body330st000",
+        "el_sf_body390st000",
+        "el_sf_body450st000",
+        "el_sf_body450st100",
+        "el_sf_body450st200",
+        "el_sf_body510st000",
+        "el_sf_body570st000"
       ],
       "var_list": [
         {
@@ -57,14 +76,195 @@
           "name": "n-vel",
           "unit": "m/s",
           "description": "normal velocity"
+        },
+        {
+          "name": "e_xx",
+          "unit": "-",
+          "description": "longitudinal strain in x-direction"
+        },
+        {
+          "name": "e_yy",
+          "unit": "-",
+          "description": "longitudinal strain in y-direction"
         }
       ],
-      "prefix": "body",
+      "prefix": "el_sf_body",
+      "file_type": "csv"
+    },
+    {
+      "name": "body acoustic seafloor",
+      "content": "receivers in the body, off-fault",
+      "graph_type": "timeseries",
+      "list_of_receivers": [
+        "ac_sf_body-010st000",
+        "ac_sf_body-010st100",
+        "ac_sf_body-030st000",
+        "ac_sf_body-030st100",
+        "ac_sf_body-090st000",
+        "ac_sf_body-090st100",
+        "ac_sf_body-090st200",
+        "ac_sf_body-150st000",
+        "ac_sf_body-150st100",
+        "ac_sf_body-150st200",
+        "ac_sf_body-210st000",
+        "ac_sf_body-210st100",
+        "ac_sf_body-210st200",
+        "ac_sf_body010st000",
+        "ac_sf_body010st100",
+        "ac_sf_body030st000",
+        "ac_sf_body030st100",
+        "ac_sf_body090st000",
+        "ac_sf_body090st100",
+        "ac_sf_body090st200",
+        "ac_sf_body150st000",
+        "ac_sf_body150st100",
+        "ac_sf_body210st000",
+        "ac_sf_body210st100",
+        "ac_sf_body270st000",
+        "ac_sf_body270st100",
+        "ac_sf_body270st200",
+        "ac_sf_body330st000",
+        "ac_sf_body390st000",
+        "ac_sf_body450st000",
+        "ac_sf_body450st100",
+        "ac_sf_body450st200",
+        "ac_sf_body510st000",
+        "ac_sf_body570st000"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "h-disp",
+          "unit": "m",
+          "description": "horizontal displacement"
+        },
+        {
+          "name": "h-vel",
+          "unit": "m/s",
+          "description": "horizontal velocity"
+        },
+        {
+          "name": "v-disp",
+          "unit": "m",
+          "description": "vertical displacement"
+        },
+        {
+          "name": "v-vel",
+          "unit": "m/s",
+          "description": "vertical velocity"
+        },
+        {
+          "name": "n-disp",
+          "unit": "m",
+          "description": "normal displacement"
+        },
+        {
+          "name": "n-vel",
+          "unit": "m/s",
+          "description": "normal velocity"
+        },
+        {
+          "name": "p",
+          "unit": "Pa",
+          "description": "pressure"
+        }
+      ],
+      "prefix": "ac_sf_body",
+      "file_type": "csv"
+    },
+    {
+      "name": "body acoustic sea surface",
+      "content": "receivers in the body, off-fault, sea surface",
+      "graph_type": "timeseries",
+      "list_of_receivers": [
+        "ac_ss_body-010st000",
+        "ac_ss_body-010st100",
+        "ac_ss_body-030st000",
+        "ac_ss_body-030st100",
+        "ac_ss_body-090st000",
+        "ac_ss_body-090st100",
+        "ac_ss_body-090st200",
+        "ac_ss_body-150st000",
+        "ac_ss_body-150st100",
+        "ac_ss_body-150st200",
+        "ac_ss_body-210st000",
+        "ac_ss_body-210st100",
+        "ac_ss_body-210st200",
+        "ac_ss_body010st000",
+        "ac_ss_body010st100",
+        "ac_ss_body030st000",
+        "ac_ss_body030st100",
+        "ac_ss_body090st000",
+        "ac_ss_body090st100",
+        "ac_ss_body090st200",
+        "ac_ss_body150st000",
+        "ac_ss_body150st100",
+        "ac_ss_body210st000",
+        "ac_ss_body210st100",
+        "ac_ss_body270st000",
+        "ac_ss_body270st100",
+        "ac_ss_body270st200",
+        "ac_ss_body330st000",
+        "ac_ss_body390st000",
+        "ac_ss_body450st000",
+        "ac_ss_body450st100",
+        "ac_ss_body450st200",
+        "ac_ss_body510st000",
+        "ac_ss_body570st000"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "h-disp",
+          "unit": "m",
+          "description": "horizontal displacement"
+        },
+        {
+          "name": "h-vel",
+          "unit": "m/s",
+          "description": "horizontal velocity"
+        },
+        {
+          "name": "v-disp",
+          "unit": "m",
+          "description": "vertical displacement"
+        },
+        {
+          "name": "v-vel",
+          "unit": "m/s",
+          "description": "vertical velocity"
+        },
+        {
+          "name": "n-disp",
+          "unit": "m",
+          "description": "normal displacement"
+        },
+        {
+          "name": "n-vel",
+          "unit": "m/s",
+          "description": "normal velocity"
+        },
+        {
+          "name": "p",
+          "unit": "Pa",
+          "description": "pressure"
+        }
+      ],
+      "prefix": "ac_ss_body",
       "file_type": "csv"
     },
     {
       "name": "fault",
       "content": "receivers on-fault",
+      "graph_type": "timeseries",
       "list_of_receivers": [
         "faultst000dp000",
         "faultst000dp010",
@@ -132,6 +332,48 @@
         }
       ],
       "prefix": "fault",
+      "file_type": "csv"
+    },
+    {
+      "name": "Tsunami",
+      "content": "Tsunami sea surface height anomaly",
+      "graph_type": "surface",
+      "list_of_receivers": [
+        "tsunami030s",
+        "tsunami060s",
+        "tsunami090s",
+        "tsunami120s"
+      ],
+      "grid": {
+        "x": {
+          "min": -100000.0,
+          "max": 100000.0,
+          "n": 1000
+        },
+        "y": {
+          "min": -100000.0,
+          "max": 100000.0,
+          "n": 1000
+        }
+      },
+      "var_list": [
+        {
+          "name": "x",
+          "unit": "m",
+          "description": "distance along x"
+        },
+        {
+          "name": "y",
+          "unit": "m",
+          "description": "distance along y"
+        },
+        {
+          "name": "ssha",
+          "unit": "m",
+          "description": "sea surface height anomaly"
+        }
+      ],
+      "prefix": "tsunami",
       "file_type": "csv"
     }
   ]

@@ -6,6 +6,9 @@ import boto3
 import pandas as pd
 from io import StringIO, BytesIO
 
+from scipy.interpolate import NearestNDInterpolator, griddata
+import numpy as np
+
 s3 = boto3.client('s3')
 
 
@@ -31,6 +34,54 @@ def extract_header(content):
     return header_data
 
 
+def interpolate_data(df, grid_params):
+    """Apply interpolation for all variables in the dataframe."""
+    print(f"Applying interpolation")
+
+    x_min, x_max, x_n = grid_params["x"]["min"], grid_params["x"]["max"], grid_params["x"]["n"]
+    y_min, y_max, y_n = grid_params["y"]["min"], grid_params["y"]["max"], grid_params["y"]["n"]
+
+    print(grid_params)
+
+    # Create a regular grid
+    x_grid = np.linspace(x_min, x_max, x_n)
+    y_grid = np.linspace(y_min, y_max, y_n)
+    x_mesh, y_mesh = np.meshgrid(x_grid, y_grid)
+
+    variables = [col for col in df.columns if col not in ["x", "y"]]
+
+    interpolated_data = {"x": x_mesh.flatten(), "y": y_mesh.flatten()}
+    # Interpolate all variables values onto the grid
+    for var in variables:
+        print(f"interpolating {var}")
+        var_grid = griddata(
+            (df['x'], df['y']),  # Input points
+            df[var],  # Input values
+            (x_mesh, y_mesh),  # Grid to interpolate onto
+            method='linear'  # Interpolation method ('linear', 'nearest', 'cubic')
+        )
+
+        # Extrapolate missing values using nearest neighbor
+        valid_mask = ~np.isnan(var_grid)  # Mask of valid (non-NaN) values
+        valid_points = np.column_stack((x_mesh[valid_mask], y_mesh[valid_mask]))  # Valid (x, z) points
+        valid_values = var_grid[valid_mask]  # Valid v-disp values
+
+        # Create a nearest neighbor interpolator
+        nearest_interp = NearestNDInterpolator(valid_points, valid_values)
+
+        # Fill missing values by extrapolating
+        var_grid_filled = np.where(
+            np.isnan(var_grid),  # Condition: Where values are NaN
+            nearest_interp(x_mesh, y_mesh),  # Fill with nearest neighbor values
+            var_grid  # Keep original values where not NaN
+        )
+        interpolated_data[var] = var_grid_filled.flatten()
+
+    # Create a new DataFrame
+    interpolated_df = pd.DataFrame(interpolated_data)
+    return interpolated_df
+
+
 def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_metadata=None, **kwargs):
     output_folder = f"/tmp/{code_name}_{version}/"
     os.makedirs(output_folder, exist_ok=True)
@@ -50,16 +101,22 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
     except Exception as e:
         raise ValueError(f"Error loading template {template_key}: {e}")
 
-    with zipfile.ZipFile(BytesIO(zip_obj['Body'].read())) as zip_file:
+    with zipfile.ZipFile(BytesIO(zip_obj['Body'].read())) as zip_obj:
+        zip_file_list = zip_obj.namelist()
         for file_info in template['files']:
             prefix = file_info['prefix']
             file_type = file_info['file_type']
             expected_structure = file_info
-            # Match files based on prefix and file type
-            matching_files = [f for f in zip_file.namelist() if f.startswith(prefix) and f.endswith(f".{file_type}")]
+
+            # Find matching files, even if they're in subdirectories
+            matching_files = [
+                f for f in zip_file_list
+                if os.path.basename(f).startswith(prefix) and f.endswith(f".{file_type}")
+            ]
+            print(f"number of mathcing files for {prefix} {len(matching_files)}")
             for file_name in matching_files:
                 # Read and validate file
-                with zip_file.open(file_name) as file:
+                with zip_obj.open(file_name) as file:
                     file_content = file.read().decode('utf-8')
                     df = pd.read_csv(StringIO(file_content), comment='#', sep='\s+')
 
@@ -67,9 +124,11 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
                     var_list = expected_structure['var_list']
                     expected_columns = [var['name'] for var in var_list]
                     if list(df.columns) != expected_columns:
-                        raise ValueError(f"File {file_name} does not match the expected structure.")
+                        raise ValueError(f"File {os.path.basename(file_name)} does not match the expected structure.")
+                    if "grid" in expected_structure:
+                        df = interpolate_data(df, expected_structure['grid'])
                     # Save as Parquet
-                    output_path = os.path.join(output_folder, f"{os.path.splitext(file_name)[0]}.parquet")
+                    output_path = os.path.join(output_folder, f"{os.path.splitext(os.path.basename(file_name))[0]}.parquet")
                     df.to_parquet(output_path, index=False)
                     # Extract the header from the first .dat file
                     if common_header is None:
@@ -106,7 +165,6 @@ def handler(event, context):
         zip_name = os.path.basename(zip_key)
         code_name, version = zip_name.rsplit('.', 1)[0].split('_', 1)
         print(f'Processing benchmark {benchmark_pb}, code {code_name}, version {version}')
-
         try:
             process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_metadata)
         except Exception as e:

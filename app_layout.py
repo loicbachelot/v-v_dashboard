@@ -26,7 +26,7 @@ def get_main_page():
                         ),
                         dbc.Col(
                             html.H1(
-                                "V&V Dashboard",
+                                "Code Verification Platform",
                                 style={
                                     'textAlign': 'center',
                                     'color': 'white'
@@ -125,70 +125,69 @@ def get_main_page():
                                             dbc.Row(
                                                 children=[
                                                     dbc.Col(children=[
-                                                        html.Div([html.H5("List selected datasets, click for information:", style={'color': '#000000'}),
-                                                                  html.Div(id='links-container'),  # Container for links
-                                                                  # Bootstrap modal
-                                                                  dbc.Modal(
-                                                                      [
-                                                                          dbc.ModalHeader(
-                                                                              dbc.ModalTitle("File Metadata")),
-                                                                          dbc.ModalBody(html.Pre(id='popup-content')),
-                                                                          # JSON content display
-                                                                          dbc.ModalFooter(
-                                                                              dbc.Button("Close", id="close-popup",
-                                                                                         className="ms-auto",
-                                                                                         n_clicks=0)
-                                                                          ),
-                                                                      ],
-                                                                      id="popup-modal",
-                                                                      is_open=False,
-                                                                  ),])
+                                                        html.Div([html.H5(
+                                                            "List selected datasets, click for information:",
+                                                            style={'color': '#000000'}),
+                                                            html.Div(id='links-container'),  # Container for links
+                                                            # Bootstrap modal
+                                                            dbc.Modal(
+                                                                [
+                                                                    dbc.ModalHeader(
+                                                                        dbc.ModalTitle("File Metadata")),
+                                                                    dbc.ModalBody(html.Pre(id='popup-content')),
+                                                                    # JSON content display
+                                                                    dbc.ModalFooter(
+                                                                        dbc.Button("Close", id="close-popup",
+                                                                                   className="ms-auto",
+                                                                                   n_clicks=0)
+                                                                    ),
+                                                                ],
+                                                                id="popup-modal",
+                                                                is_open=False,
+                                                            ), ])
                                                     ]
                                                     )
                                                 ]
                                             ),
                                         ]),
                                         dcc.Tab(label='Graph control', value='tab-graphcontrol',
-                                                # children=[
-                                                #     dbc.Row(
-                                                #         children=[
-                                                #             dbc.Col(children=[
-                                                #                 dbc.Label("time unit"),
-                                                #                 dbc.Select(
-                                                #                     id="time-unit",
-                                                #                     options=[
-                                                #                         {"label": "year", "value": "years"},
-                                                #                         {"label": "days", "value": "days"},
-                                                #                         {"label": "hours", "value": "hours"},
-                                                #                         {"label": "seconds", "value": "seconds"}
-                                                #                     ],
-                                                #                     value="years"
-                                                #                 ),
-                                                #                 dbc.Label(
-                                                #                     "Choose the period to display in years"),
-                                                #                 dbc.Input(type="number", min=0, max=3000, step=1,
-                                                #                           id="year-start", placeholder="start",
-                                                #                           style={'marginBottom': '10px',
-                                                #                                  'marginLeft': '10px'}),
-                                                #                 dbc.Input(type="number", min=0, max=3000, step=1,
-                                                #                           id="year-end", placeholder="end",
-                                                #                           style={'marginBottom': '10px',
-                                                #                                  'marginLeft': '10px'}
-                                                #                           ),
-                                                #                 dbc.Button("submit",
-                                                #                            id='submit-button',
-                                                #                            n_clicks=0,
-                                                #                            color="primary",
-                                                #                            style={'marginBottom': '10px',
-                                                #                                   'marginLeft': '10px'}
-                                                #
-                                                #                            ),
-                                                #             ]
-                                                #             )
-                                                #         ],
-                                                #     )
-                                                # ]
-                                                ),
+                                                children=[
+                                                    dbc.Row(
+                                                        id='graph-control-surface',
+                                                        children=[
+                                                            dbc.Col(children=[
+                                                                dbc.Label("surface plot type"),
+                                                                dbc.Select(
+                                                                    id="surface-plot-type",
+                                                                    options=[
+                                                                        {"label": "3D surface", "value": "3d_surface"},
+                                                                        {"label": "Heatmap", "value": "heatmap"},
+                                                                    ],
+                                                                    value="heatmap"
+                                                                ),
+                                                                dbc.Button("submit",
+                                                                           id='submit-button-gc',
+                                                                           n_clicks=0,
+                                                                           color="primary",
+                                                                           style={'marginBottom': '10px',
+                                                                                  'marginLeft': '10px'}
+
+                                                                           ),
+                                                            ]
+                                                            )
+                                                        ],
+                                                        style={"display": "none"}
+                                                    ),
+                                                    dbc.Row(
+                                                        id='graph-control-time',
+                                                        children=[
+                                                            dbc.Col(
+                                                                dbc.Label("No graph control for this plot type")
+                                                            )
+                                                        ],
+                                                        style={"display": "none"}
+                                                    ),
+                                                ])
                                     ]
                                              ),
                                 ],
@@ -209,7 +208,8 @@ def get_main_page():
                                                 'toImageButtonOptions': {
                                                     'format': 'png',  # one of png, svg, jpeg, webp
                                                     'filename': 'export_plots',
-                                                    'scale': 3  # Multiply title/legend/axis/canvas sizes by this factor
+                                                    'scale': 3
+                                                    # Multiply title/legend/axis/canvas sizes by this factor
                                                 }
                                                 }
                                     ),
