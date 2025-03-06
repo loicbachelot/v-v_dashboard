@@ -234,7 +234,8 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
         num_rows = num_ds + 1  # One additional row for the cross-section subplot
         num_cols = 1 if num_ds == 1 else 2
         max_abs_value = 0.5
-        slider = df.loc[(df['y'] - slider).abs().idxmin(), 'y']
+
+        print(f"num_ds: {num_ds}, num_rows: {num_rows}, num_cols: {num_cols}, slider: {slider}")
         # if slider_only and old_fig:
         #     # Update only the cross-section and black line efficiently
         #     fig = old_fig
@@ -255,24 +256,35 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
         #
         #     return fig  # Return modified figure without full replot
 
-        # Create a new figure if not updating only the cross-section
+        # Compute row heights dynamically
+        dataset_row_height = (2 / 3) / num_ds  # Ensures all dataset rows together take 2/3 of space
+        cross_section_row_height = 1 / 3  # Last row gets 1/3 of space
+
+        row_heights = [dataset_row_height] * num_ds + [cross_section_row_height]  # Apply proportions
+
         fig = make_subplots(
-            rows=num_rows, cols=num_cols,
-            specs=[[{'type': 'surface' if plot_type == "3d_surface" else 'heatmap'} for _ in range(num_cols)] for _ in
-                   range(num_ds)] + [[{'type': 'scatter', 'colspan': num_cols}] + [None] * (num_cols - 1)],
+            rows=num_rows,
+            cols=num_cols,
+            specs=[
+                      [{'type': 'surface' if plot_type == "3d_surface" else 'heatmap'} for _ in range(num_cols)]
+                      for _ in range(num_ds)
+                  ] + [[{'type': 'scatter', 'colspan': num_cols}] + [None] * (num_cols - 1)],
             subplot_titles=[f"Dataset: {name}" for name in datasets] + [f"Cross-sections y={slider}"],
-            vertical_spacing=0.1, horizontal_spacing=0.08
+            vertical_spacing=0.1,
+            horizontal_spacing=0.08,
+            row_heights=row_heights  # Apply corrected heights
         )
 
         for i, dataset_name in enumerate(datasets):
+            print(f"Plotting dataset: {dataset_name}")
             row = (i // num_cols) + 1
             col = (i % num_cols) + 1
             dataset_df = df[df['dataset_name'] == dataset_name]
+            slider_idx = dataset_df.loc[(df['y'] - slider).abs().idxmin(), 'y']
 
             x_unique = dataset_df['x'].unique()
             y_unique = dataset_df['y'].unique()
             v_disp_2d = dataset_df[variable_dict['name']].values.reshape((len(x_unique), len(y_unique)))
-
             if plot_type == "3d_surface":
                 fig.add_trace(go.Surface(
                     x=x_unique,
@@ -287,11 +299,11 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                 scene_key = f'scene{i + 1}' if i > 0 else 'scene'
 
                 # Add black cross-section line in the 3D scene
-                y_index = np.abs(y_unique - slider).argmin()
+                y_index = np.abs(y_unique - slider_idx).argmin()
                 fig.add_trace(go.Scatter3d(
                     x=x_unique,
                     y=[y_unique[y_index]] * len(x_unique),
-                    z=dataset_df[dataset_df['y'] == slider][variable_dict['name']],
+                    z=dataset_df[dataset_df['y'] == slider_idx][variable_dict['name']],
                     mode='lines',
                     line=dict(color='black', width=3),
                     name=f"3D Cross-section Line ({dataset_name})",
@@ -320,7 +332,7 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                 # Add the black line indicating the cross-section
                 fig.add_trace(go.Scatter(
                     x=[x_unique.min(), x_unique.max()],
-                    y=[slider, slider],
+                    y=[slider_idx, slider_idx],
                     mode='lines',
                     line=dict(color='black', width=1),
                     name="Cross-section Line"
@@ -333,10 +345,10 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                     yaxis_key: dict(title='y (m)')
                 })
 
-            # Add cross-section plot for this dataset
+            # # Add cross-section plot for all dataset
             fig.add_trace(go.Scatter(
                 x=x_unique,
-                y=dataset_df[dataset_df['y'] == slider][variable_dict['name']],
+                y=dataset_df[dataset_df['y'] == slider_idx][variable_dict['name']],
                 mode='lines',
                 name=f"Cross-section - {dataset_name}",
                 line=dict(width=2)
