@@ -165,7 +165,14 @@ def get_main_page():
                                                                     ],
                                                                     value="3d_surface"
                                                                 ),
-                                                                dcc.Slider(id='slider-gc-surface', min=-10000, max=10000, step=2000, value=0),  # For cross-section update
+                                                                dcc.Slider(id='slider-gc-surface',
+                                                                           min=-100000,
+                                                                           max=100000,
+                                                                           step=5000,
+                                                                           value=0,
+                                                                           marks={i: str(i) for i in
+                                                                                  range(-100000, 100000 + 1, (100000+100000)//10)}
+                                                                           ),  # For cross-section update
                                                             ]
                                                             )
                                                         ],

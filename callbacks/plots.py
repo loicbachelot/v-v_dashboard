@@ -234,33 +234,33 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
         num_rows = num_ds + 1  # One additional row for the cross-section subplot
         num_cols = 1 if num_ds == 1 else 2
         max_abs_value = 0.5
-
-        if slider_only and old_fig:
-            # Update only the cross-section and black line efficiently
-            fig = go.Figure(old_fig)
-
-            for trace in fig.data:
-                trace_name = trace.get("name", "")  # Safe access to trace name
-
-                if trace_name.startswith("Cross-section - "):  # Identify cross-section traces
-                    dataset_name = trace_name.split(" - ")[1]
-                    dataset_df = df[df['dataset_name'] == dataset_name]
-                    v_disp_2d = dataset_df[variable_dict['name']].values.reshape(
-                        (len(dataset_df['x'].unique()), len(dataset_df['y'].unique()))
-                    )
-                    trace.y = v_disp_2d[slider, :]  # Update cross-section Y values
-
-                if trace_name == "Cross-section Line":  # Move the black line in the heatmap
-                    trace.y = [df['y'].unique()[slider], df['y'].unique()[slider]]
-
-            return fig  # Return modified figure without full replot
+        slider = df.loc[(df['y'] - slider).abs().idxmin(), 'y']
+        # if slider_only and old_fig:
+        #     # Update only the cross-section and black line efficiently
+        #     fig = old_fig
+        #
+        #     for trace in fig.data:
+        #         trace_name = trace.get("name", "")  # Safe access to trace name
+        #
+        #         if trace_name.startswith("Cross-section - "):  # Identify cross-section traces
+        #             dataset_name = trace_name.split(" - ")[1]
+        #             dataset_df = df[df['dataset_name'] == dataset_name]
+        #             v_disp_2d = dataset_df[variable_dict['name']].values.reshape(
+        #                 (len(dataset_df['x'].unique()), len(dataset_df['y'].unique()))
+        #             )
+        #             trace.y = dataset_df[dataset_df['y'] == slider][variable_dict['name']]
+        #
+        #         if trace_name == "Cross-section Line":  # Move the black line in the heatmap
+        #             trace.y = [[slider], [slider]]
+        #
+        #     return fig  # Return modified figure without full replot
 
         # Create a new figure if not updating only the cross-section
         fig = make_subplots(
             rows=num_rows, cols=num_cols,
             specs=[[{'type': 'surface' if plot_type == "3d_surface" else 'heatmap'} for _ in range(num_cols)] for _ in
                    range(num_ds)] + [[{'type': 'scatter', 'colspan': num_cols}] + [None] * (num_cols - 1)],
-            subplot_titles=[f"Dataset: {name}" for name in datasets] + ["Cross-sections"],
+            subplot_titles=[f"Dataset: {name}" for name in datasets] + [f"Cross-sections y={slider}"],
             vertical_spacing=0.1, horizontal_spacing=0.08
         )
 
@@ -285,6 +285,19 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                 ), row=row, col=col)
 
                 scene_key = f'scene{i + 1}' if i > 0 else 'scene'
+
+                # Add black cross-section line in the 3D scene
+                y_index = np.abs(y_unique - slider).argmin()
+                fig.add_trace(go.Scatter3d(
+                    x=x_unique,
+                    y=[y_unique[y_index]] * len(x_unique),
+                    z=dataset_df[dataset_df['y'] == slider][variable_dict['name']],
+                    mode='lines',
+                    line=dict(color='black', width=3),
+                    name=f"3D Cross-section Line ({dataset_name})",
+                    scene=scene_key  # Assign to correct 3D scene
+                ), row=row, col=col)
+
                 fig.update_layout({
                     scene_key: dict(
                         xaxis=dict(title='x (m)'),
@@ -307,7 +320,7 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                 # Add the black line indicating the cross-section
                 fig.add_trace(go.Scatter(
                     x=[x_unique.min(), x_unique.max()],
-                    y=[y_unique[slider], y_unique[slider]],
+                    y=[slider, slider],
                     mode='lines',
                     line=dict(color='black', width=1),
                     name="Cross-section Line"
@@ -323,7 +336,7 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
             # Add cross-section plot for this dataset
             fig.add_trace(go.Scatter(
                 x=x_unique,
-                y=v_disp_2d[slider, :],
+                y=dataset_df[dataset_df['y'] == slider][variable_dict['name']],
                 mode='lines',
                 name=f"Cross-section - {dataset_name}",
                 line=dict(width=2)
