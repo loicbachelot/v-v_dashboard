@@ -1,5 +1,6 @@
 import os
 import json
+import warnings
 import zipfile
 
 import boto3
@@ -124,7 +125,8 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
                     var_list = expected_structure['var_list']
                     expected_columns = [var['name'] for var in var_list]
                     if list(df.columns) != expected_columns:
-                        raise ValueError(f"File {os.path.basename(file_name)} does not match the expected structure.")
+                        warnings.warn(f"File {os.path.basename(file_name)} does not match the expected structure. Expected columns: {expected_columns}, found columns: {list(df.columns)}")
+                        continue
                     if "grid" in expected_structure:
                         df = interpolate_data(df, expected_structure['grid'])
                     # Save as Parquet
@@ -138,6 +140,7 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
                 target_key = f"public_ds/{benchmark_pb}/{code_name}_{version}/{os.path.basename(output_path)}"
                 s3.upload_file(output_path, "benchmark-vv-data", target_key, ExtraArgs={"Metadata": user_metadata})
                 file_list.append(file_name)
+                os.remove(output_path)
 
     # Save metadata as JSON and upload it
     metadata = {"common_header": common_header, "processed_files": file_list}
