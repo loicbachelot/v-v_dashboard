@@ -165,14 +165,25 @@ def get_main_page():
                                                                     ],
                                                                     value="3d_surface"
                                                                 ),
+                                                                dbc.Label("Variable selection"),
+                                                                dbc.Select(
+                                                                    id="surface-plot-var",
+                                                                    options=[],
+                                                                    value=""
+                                                                ),
+                                                                dbc.Label(
+                                                                    "Cross section slider (move cross section along y axis)"),
                                                                 dcc.Slider(id='slider-gc-surface',
                                                                            min=-100000,
                                                                            max=100000,
                                                                            step=5000,
                                                                            value=0,
                                                                            marks={i: str(i) for i in
-                                                                                  range(-100000, 100000 + 1, (100000+100000)//10)}
+                                                                                  range(-100000, 100000 + 1,
+                                                                                        (100000 + 100000) // 10)}
                                                                            ),  # For cross-section update
+                                                                dbc.Button('Update graphs', id="update-graphs",
+                                                                           color="primary", style={'margin': '10px'}),
                                                             ]
                                                             )
                                                         ],
@@ -197,7 +208,7 @@ def get_main_page():
                             dbc.Col([
                                 dcc.Loading(id="ls-loading-2", children=[
                                     dcc.Graph(
-                                        id='time-series-graph',
+                                        id='main-graph',
                                         style={'responsive': True,
                                                'width': '100%',
                                                'height': '85vh'},
@@ -210,6 +221,24 @@ def get_main_page():
                                                     'filename': 'export_plots',
                                                     'scale': 3
                                                     # Multiply title/legend/axis/canvas sizes by this factor
+                                                }
+                                                }
+                                    ),
+                                ], type="default"),
+                                dcc.Loading(id="ls-loading-2", children=[
+                                    dcc.Graph(
+                                        id='sub-graph',
+                                        style={'responsive': True,
+                                               'width': '100%',
+                                               'height': '30vh'},
+                                        animate=False,
+                                        config={'displayModeBar': True,
+                                                'displaylogo': False,
+                                                'scrollZoom': True,
+                                                'toImageButtonOptions': {
+                                                    'format': 'png',  # one of png, svg, jpeg, webp
+                                                    'filename': 'export_plots',
+                                                    'scale': 3
                                                 }
                                                 }
                                     ),

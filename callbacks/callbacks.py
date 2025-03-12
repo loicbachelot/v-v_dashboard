@@ -2,7 +2,6 @@ import html
 import dash
 import pandas as pd
 import plotly.graph_objects as go
-
 from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic_v2
 from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark, get_metadata, get_benchmark_params, \
     get_plots_from_json
@@ -10,25 +9,28 @@ from dash import html, ctx, no_update
 
 
 def get_callbacks(app):
-    @app.callback(dash.dependencies.Output('time-series-graph', 'figure'),
+    @app.callback(dash.dependencies.Output('main-graph', 'figure'),
+                  dash.dependencies.Output('sub-graph', 'figure'),
+                  dash.dependencies.Output('sub-graph', 'style'),
                   [
-                      dash.dependencies.Input('time-series-graph', 'figure'),
                       dash.dependencies.Input('show-graphs', "n_clicks"),
-                      dash.dependencies.Input('slider-gc-surface', 'value'),
-                      dash.dependencies.Input('surface-plot-type', 'value'),
-                      dash.dependencies.Input('benchmark-params', 'data'),
-                      dash.dependencies.Input('file-type-selector', "value"),
-                  ],
+                      dash.dependencies.Input('update-graphs', 'n_clicks'),
+                      dash.dependencies.Input('benchmark-params', 'data'),                  ],
                   [
+                      dash.dependencies.State('file-type-selector', "value"),
                       dash.dependencies.State('dataset-choice', "value"),
                       dash.dependencies.State('receiver-selector', "value"),
                       dash.dependencies.State('url', "search"),
+                      dash.dependencies.State('slider-gc-surface', 'value'),
+                      dash.dependencies.State('surface-plot-type', 'value'),
+                      dash.dependencies.State('surface-plot-var', "value"),
+                      dash.dependencies.State('main-graph', 'figure'),
                       dash.dependencies.State('upload-data', "contents"),
                       dash.dependencies.State('upload-data', 'filename'),
                   ]
                   )
-    def display_plots(current_fig, ds_update_clicks, slider_gc_surface, surface_plot_type, benchmark_params, file_type_name, dataset_list, receiver,
-                      benchmark_id, upload_data, filename):
+    def display_plots(ds_update_clicks, graph_control_nclick, benchmark_params, file_type_name, dataset_list, receiver,
+                      benchmark_id, slider_gc_surface, surface_plot_type, surface_plot_var, current_fig, upload_data, filename):
         """
         Update the time-series graph based on user inputs.
 
@@ -51,12 +53,12 @@ def get_callbacks(app):
                     "xaxis": {"title": "Time"},
                     "yaxis": {"title": "Value"},
                 }
-            }
+            }, {}, {'display': 'none'}
 
         list_df = []
         plot_type = next((file['graph_type'] for file in benchmark_params['files'] if file['name'] == file_type_name), None)
         plots_list = get_plots_from_json(benchmark_params, file_type_name)
-        if ds_update_clicks is not None:
+        if ds_update_clicks is not None or graph_control_nclick is not None:
             selected_df = get_df(benchmark_id, dataset_list, receiver)
             upload_df = get_upload_df(upload_data, filename)
 
@@ -80,8 +82,9 @@ def get_callbacks(app):
             else:
                 fig = go.Figure()
                 slider_only = False
-            return main_surface_plot_dynamic_v2(ds_update, fig, plots_list[0], surface_plot_type, slider_gc_surface, slider_only)
-        return main_time_plot_dynamic(ds_update, plots_list)
+            plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
+            return main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type, slider_gc_surface, slider_only), {}, {'display': 'block'}
+        return main_time_plot_dynamic(ds_update, plots_list), {}, {'display': 'none'}
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID
     @app.callback(
@@ -205,8 +208,11 @@ def get_callbacks(app):
         return list_files, list_files[0]
 
     @app.callback(
-        dash.dependencies.Output('receiver-selector', 'options'),
-        dash.dependencies.Output('receiver-selector', 'value'),
+        [dash.dependencies.Output('receiver-selector', 'options'),
+         dash.dependencies.Output('receiver-selector', 'value'),
+         dash.dependencies.Output('surface-plot-var', 'options'),
+         dash.dependencies.Output('surface-plot-var', 'value')],
+
         [dash.dependencies.Input('file-type-selector', 'value')],
         [dash.dependencies.State('benchmark-params', 'data')]
     )
@@ -226,7 +232,8 @@ def get_callbacks(app):
             return no_update
         for file in benchmark_params['files']:
             if file['name'] == file_selected:
-                return file['list_of_receivers'], ''
+                list_vars = [var['name'] for var in get_plots_from_json(benchmark_params, file_selected)]
+                return file['list_of_receivers'], file['list_of_receivers'][0], list_vars, list_vars[-1]
         return no_update
 
     @app.callback(
@@ -235,7 +242,7 @@ def get_callbacks(app):
         [dash.dependencies.Input('file-type-selector', 'value')],
         [dash.dependencies.State('benchmark-params', 'data')]
     )
-    def update_receiver_selector(file_selected, benchmark_params):
+    def update_graph_control(file_selected, benchmark_params):
         graph_type = ''
         if benchmark_params is None:
             return no_update

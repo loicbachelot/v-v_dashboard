@@ -106,7 +106,7 @@ def get_plots_from_json(json_data, file_name):
 
     Parameters:
         json_data (dict): The JSON data containing file information.
-        file_name (str): The file type to filter files (e.g., "csv").
+        file_name (str): The file type to filter files (e.g., "surfdef").
 
     Returns:
         list: A list of dictionaries with variable names and units to plot against time.
