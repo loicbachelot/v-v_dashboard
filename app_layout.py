@@ -163,7 +163,7 @@ def get_main_page():
                                                                         {"label": "3D surface", "value": "3d_surface"},
                                                                         {"label": "Heatmap", "value": "heatmap"},
                                                                     ],
-                                                                    value="3d_surface"
+                                                                    value="heatmap"
                                                                 ),
                                                                 dbc.Label("Variable selection"),
                                                                 dbc.Select(
@@ -206,7 +206,7 @@ def get_main_page():
                                 width=3,
                             ),
                             dbc.Col([
-                                dcc.Loading(id="ls-loading-2", children=[
+                                dcc.Loading(id="ls-loading-1", children=[
                                     dcc.Graph(
                                         id='main-graph',
                                         style={'responsive': True,

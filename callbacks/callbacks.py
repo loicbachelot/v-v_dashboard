@@ -2,7 +2,7 @@ import html
 import dash
 import pandas as pd
 import plotly.graph_objects as go
-from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic_v2
+from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic_v2, cross_section_plots
 from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark, get_metadata, get_benchmark_params, \
     get_plots_from_json
 from dash import html, ctx, no_update
@@ -79,11 +79,15 @@ def get_callbacks(app):
             if trigger == "slider-gc-surface":
                 fig = go.Figure(current_fig)
                 slider_only = True
+                plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
+                print("updating cross section only")
+                return fig, cross_section_plots(ds_update, plot_params, slider_gc_surface), {'display': 'block'}
             else:
                 fig = go.Figure()
                 slider_only = False
-            plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
-            return main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type, slider_gc_surface, slider_only), {}, {'display': 'block'}
+                plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
+                return (main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type, slider_gc_surface, slider_only),
+                        cross_section_plots(ds_update, plot_params, slider_gc_surface), {'display': 'block'})
         return main_time_plot_dynamic(ds_update, plots_list), {}, {'display': 'none'}
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID
