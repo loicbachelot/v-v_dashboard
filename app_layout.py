@@ -182,8 +182,6 @@ def get_main_page():
                                                                                   range(-100000, 100000 + 1,
                                                                                         (100000 + 100000) // 10)}
                                                                            ),  # For cross-section update
-                                                                dbc.Button('Update graphs', id="update-graphs",
-                                                                           color="primary", style={'margin': '10px'}),
                                                             ]
                                                             )
                                                         ],
@@ -192,12 +190,21 @@ def get_main_page():
                                                     dbc.Row(
                                                         id='graph-control-time',
                                                         children=[
-                                                            dbc.Col(
-                                                                dbc.Label("No graph control for this plot type")
+                                                            dbc.Col([
+                                                                dbc.Label("Choose x axis variable"),
+                                                                dbc.Select(
+                                                                    id="time-xaxis-var",
+                                                                    options=[
+                                                                        {"label": "Time", "value": "t"},
+                                                                    ],
+                                                                    value="t"
+                                                                )]
                                                             )
                                                         ],
                                                         style={"display": "none"}
                                                     ),
+                                                    dbc.Button('Update graphs', id="update-graphs",
+                                                               color="primary", style={'margin': '10px'}),
                                                 ])
                                     ]
                                              ),
@@ -230,7 +237,7 @@ def get_main_page():
                                         id='sub-graph',
                                         style={'responsive': True,
                                                'width': '100%',
-                                               'height': '30vh'},
+                                               'height': '50vh'},
                                         animate=False,
                                         config={'displayModeBar': True,
                                                 'displaylogo': False,

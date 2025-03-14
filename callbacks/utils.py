@@ -117,7 +117,7 @@ def get_plots_from_json(json_data, file_name):
     for file_info in json_data['files']:
         if file_info['name'] == file_name:
             for var in file_info['var_list']:
-                if var['name'] not in ['t', 'x', 'y']:  # Exclude "time", "x" and "y"
+                if var['name'] not in ['x', 'y']:  # "x" and "y"
                     plots.append(var)
     return plots
 

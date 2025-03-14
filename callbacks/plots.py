@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import numpy as np
 
 
-def main_time_plot_dynamic(df, variable_list):
+def main_time_plot_dynamic(df, variable_list, x_axis=dict({'name':'t', 'unit':'s', 'description':'Time'})):
     """
     Generate a dynamic plot with subplots based on a list of variable dictionaries.
 
@@ -18,9 +18,12 @@ def main_time_plot_dynamic(df, variable_list):
     """
     try:
         # Calculate the number of rows needed for a 2-column layout
-        num_vars = len(variable_list)
+        filtered_list = [item for item in variable_list if item['name'] != x_axis['name']]
+        print(f"x_axis variable name: {x_axis['name']}")
+        print(f"Filtered list: {filtered_list}")
+        num_vars = len(filtered_list)-1
         num_rows = (num_vars + 1) // 2  # Round up to ensure enough rows
-
+        print(f"Number of variables: {num_vars}, number of rows: {num_rows}")
         # Get unique datasets in the file
         datasets = df['dataset_name'].unique()
 
@@ -29,14 +32,14 @@ def main_time_plot_dynamic(df, variable_list):
 
         fig = make_subplots(
             rows=num_rows, cols=2, shared_xaxes=True,
-            subplot_titles=[f"{var['description']} ({var['unit']})" for var in variable_list],
+            subplot_titles=[f"{var['description']} ({var['unit']})" for var in filtered_list],
             vertical_spacing=0.1, horizontal_spacing=0.08
         )
 
         for dataset_name, group in df.groupby('dataset_name'):
             color = color_mapping[dataset_name]
 
-            for idx, var in enumerate(variable_list):
+            for idx, var in enumerate(filtered_list):
                 row = (idx // 2) + 1
                 col = (idx % 2) + 1
 
@@ -51,17 +54,18 @@ def main_time_plot_dynamic(df, variable_list):
                     row=row, col=col
                 )
 
-                # Append data to the traces (resampling aware)
-                fig.data[-1].update({'x': group['t'], 'y': group[var['name']]})
+                # Append data to the traces
+                fig.data[-1].update({'x': group[x_axis['name']], 'y': group[var['name']]})
 
         # Update layout with title and shared x-axis range
-        for idx in range(1, len(variable_list) + 1):
+        for idx in range(0, len(variable_list) + 1):
             row = (idx // 2) + 1
             col = (idx % 2) + 1
-            if row == num_rows:  # Only update the x-axis for the last row
-                fig.update_xaxes(title_text="Time (seconds)", row=row, col=col, matches='x')
-            else:
-                fig.update_xaxes(matches='x')
+            fig.update_xaxes(title_text=f"{x_axis['description']} ({x_axis['unit']})", row=row, col=col, showticklabels=True, matches='x')
+            # if row == num_rows:  # Only update the x-axis for the last row
+            #     fig.update_xaxes(title_text="Time (seconds)", row=row, col=col, matches='x')
+            # else:
+            #     fig.update_xaxes(matches='x')
 
         # Update layout to include legend and global settings
         fig.update_layout(
@@ -87,7 +91,8 @@ def main_time_plot_dynamic(df, variable_list):
         fig.update_layout(
             showlegend=True,
         )
-    return fig
+    dynamic_height = f'{min(85 + (num_rows - 2) * 20, 150)}vh'  # Scale with num_rows
+    return fig, {'width': '100%', 'height': dynamic_height}
 
 
 def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surface", slider=0, slider_only=False):
@@ -196,7 +201,21 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                     yaxis_key: dict(title='y (m)')
                 })
 
+        # Global layout updates
+        if plot_type == "3d_surface":
+            fig.update_layout(
+                title='Surface Plot of x vs y colored by ssha (Regridded Data)',
+                template='plotly_white'
+            )
+        elif plot_type == "heatmap":
+            fig.update_layout(
+                title='Heatmap of x vs y colored by SSHA (Regridded Data)',
+                template='plotly_white'
+            )
+            fig.update_xaxes(matches='x')
+            fig.update_yaxes(matches='y')
     except Exception as e:
+        num_rows = 1
         print(f"Error plotting dataset: {e}")
 
         x = np.linspace(-2, 2, 5)
@@ -217,7 +236,8 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
             colorbar=dict(title=f"{variable_dict['name']} ({variable_dict['unit']})")
         ))
 
-    return fig
+    dynamic_height = f'{min(85 + (num_rows - 2) * 20, 150)}vh'  # Scale with num_rows
+    return fig, {'width': '100%', 'height': dynamic_height}
 
 
 def cross_section_plots(df, variable_dict, slider=0):

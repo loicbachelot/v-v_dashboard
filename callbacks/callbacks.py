@@ -10,12 +10,13 @@ from dash import html, ctx, no_update
 
 def get_callbacks(app):
     @app.callback(dash.dependencies.Output('main-graph', 'figure'),
+                  dash.dependencies.Output('main-graph', 'style'),
                   dash.dependencies.Output('sub-graph', 'figure'),
                   dash.dependencies.Output('sub-graph', 'style'),
                   [
                       dash.dependencies.Input('show-graphs', "n_clicks"),
                       dash.dependencies.Input('update-graphs', 'n_clicks'),
-                      dash.dependencies.Input('benchmark-params', 'data'),                  ],
+                      dash.dependencies.Input('benchmark-params', 'data'), ],
                   [
                       dash.dependencies.State('file-type-selector', "value"),
                       dash.dependencies.State('dataset-choice', "value"),
@@ -24,13 +25,15 @@ def get_callbacks(app):
                       dash.dependencies.State('slider-gc-surface', 'value'),
                       dash.dependencies.State('surface-plot-type', 'value'),
                       dash.dependencies.State('surface-plot-var', "value"),
+                      dash.dependencies.State('time-xaxis-var', "value"),
                       dash.dependencies.State('main-graph', 'figure'),
                       dash.dependencies.State('upload-data', "contents"),
                       dash.dependencies.State('upload-data', 'filename'),
                   ]
                   )
     def display_plots(ds_update_clicks, graph_control_nclick, benchmark_params, file_type_name, dataset_list, receiver,
-                      benchmark_id, slider_gc_surface, surface_plot_type, surface_plot_var, current_fig, upload_data, filename):
+                      benchmark_id, slider_gc_surface, surface_plot_type, surface_plot_var, x_axis_sel, current_fig, upload_data,
+                      filename):
         """
         Update the time-series graph based on user inputs.
 
@@ -53,10 +56,11 @@ def get_callbacks(app):
                     "xaxis": {"title": "Time"},
                     "yaxis": {"title": "Value"},
                 }
-            }, {}, {'display': 'none'}
+            }, {'width': '100%', 'height': '85hv'}, {}, {'display': 'none'}
 
         list_df = []
-        plot_type = next((file['graph_type'] for file in benchmark_params['files'] if file['name'] == file_type_name), None)
+        plot_type = next((file['graph_type'] for file in benchmark_params['files'] if file['name'] == file_type_name),
+                         None)
         plots_list = get_plots_from_json(benchmark_params, file_type_name)
         if ds_update_clicks is not None or graph_control_nclick is not None:
             selected_df = get_df(benchmark_id, dataset_list, receiver)
@@ -80,15 +84,23 @@ def get_callbacks(app):
                 fig = go.Figure(current_fig)
                 slider_only = True
                 plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
-                print("updating cross section only")
                 return fig, cross_section_plots(ds_update, plot_params, slider_gc_surface), {'display': 'block'}
             else:
                 fig = go.Figure()
                 slider_only = False
                 plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
-                return (main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type, slider_gc_surface, slider_only),
-                        cross_section_plots(ds_update, plot_params, slider_gc_surface), {'display': 'block'})
-        return main_time_plot_dynamic(ds_update, plots_list), {}, {'display': 'none'}
+                main_graph, main_graph_style = main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type,
+                                                                          slider_gc_surface, slider_only)
+                sub_graph = cross_section_plots(ds_update, plot_params, slider_gc_surface)
+                sub_graph_style = {'display': 'block'}
+        else:
+            x_axis = next((item for item in plots_list if item['name'] == x_axis_sel), plots_list[0])
+
+            main_graph, main_graph_style = main_time_plot_dynamic(ds_update, plots_list, x_axis)
+            sub_graph = go.Figure()
+            sub_graph_style = {'display': 'none'}
+
+        return main_graph, main_graph_style, sub_graph, sub_graph_style
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID
     @app.callback(
@@ -215,7 +227,10 @@ def get_callbacks(app):
         [dash.dependencies.Output('receiver-selector', 'options'),
          dash.dependencies.Output('receiver-selector', 'value'),
          dash.dependencies.Output('surface-plot-var', 'options'),
-         dash.dependencies.Output('surface-plot-var', 'value')],
+         dash.dependencies.Output('surface-plot-var', 'value'),
+         dash.dependencies.Output('time-xaxis-var', 'options'),
+         dash.dependencies.Output('time-xaxis-var', 'value')
+         ],
 
         [dash.dependencies.Input('file-type-selector', 'value')],
         [dash.dependencies.State('benchmark-params', 'data')]
@@ -237,7 +252,8 @@ def get_callbacks(app):
         for file in benchmark_params['files']:
             if file['name'] == file_selected:
                 list_vars = [var['name'] for var in get_plots_from_json(benchmark_params, file_selected)]
-                return file['list_of_receivers'], file['list_of_receivers'][0], list_vars, list_vars[-1]
+                # returning list vars for file type selected + time (t) for the time series
+                return file['list_of_receivers'], file['list_of_receivers'][0], list_vars, list_vars[-1], list_vars+['t'], 't'
         return no_update
 
     @app.callback(
@@ -260,3 +276,4 @@ def get_callbacks(app):
             return {"display": "block"}, {"display": "none"}
         else:
             return {"display": "none"}, {"display": "block"}
+
