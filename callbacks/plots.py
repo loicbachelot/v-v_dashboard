@@ -21,7 +21,7 @@ def main_time_plot_dynamic(df, variable_list, x_axis=dict({'name':'t', 'unit':'s
         filtered_list = [item for item in variable_list if item['name'] != x_axis['name']]
         print(f"x_axis variable name: {x_axis['name']}")
         print(f"Filtered list: {filtered_list}")
-        num_vars = len(filtered_list)-1
+        num_vars = len(filtered_list)
         num_rows = (num_vars + 1) // 2  # Round up to ensure enough rows
         print(f"Number of variables: {num_vars}, number of rows: {num_rows}")
         # Get unique datasets in the file

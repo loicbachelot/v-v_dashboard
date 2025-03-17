@@ -64,8 +64,11 @@ def get_callbacks(app):
         plots_list = get_plots_from_json(benchmark_params, file_type_name)
         if ds_update_clicks is not None or graph_control_nclick is not None:
             selected_df = get_df(benchmark_id, dataset_list, receiver)
-            upload_df = get_upload_df(upload_data, filename)
-
+            # suface 1 file upload not supported for now due to interpolations needs
+            if plot_type != 'surface':
+                upload_df = get_upload_df(upload_data, filename, plots_list)
+            else:
+                upload_df = None
             if upload_df is not None:
                 list_df.append(upload_df)
             if selected_df is not None:

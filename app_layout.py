@@ -111,10 +111,17 @@ def get_main_page():
                                                     dbc.Col(children=[
                                                         dcc.Upload(id='upload-data',
                                                                    children=[
-                                                                       dbc.Button('Upload File', color="secondary")],
+                                                                       dbc.Button('Upload File', color="secondary"),
+                                                                   ],
                                                                    multiple=False,
                                                                    style={'margin': '10px'}
                                                                    ),
+                                                        dbc.Alert(
+                                                            "Warning: Single file upload is not supported for surface files.",
+                                                            color="warning",
+                                                            dismissable=True,
+                                                            style={'margin': '10px'}
+                                                        ),
                                                         html.Div([html.H5("Uploaded file:", style={'color': '#000000'}),
                                                                   html.P(id="upload-filename")])
                                                     ]
