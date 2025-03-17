@@ -95,7 +95,7 @@ def main_time_plot_dynamic(df, variable_list, x_axis=dict({'name':'t', 'unit':'s
     return fig, {'width': '100%', 'height': dynamic_height}
 
 
-def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surface", slider=0, slider_only=False):
+def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surface", slider=0, slider_only=False, colorbar_min=None, colorbar_max=None):
     """
     Generate a dynamic plot with subplots based on a list of variable dictionaries.
 
@@ -111,11 +111,19 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
     go.Figure: Plotly figure object.
     """
     try:
+        print(f"colorbar_max: {colorbar_max}, colorbar_min: {colorbar_min}")
+
         datasets = df['dataset_name'].unique()
         num_ds = len(datasets)
         num_rows = num_ds//2 + num_ds % 2
         num_cols = 1 if num_ds == 1 else 2
-        max_abs_value = 0.5
+
+        print(f"variable_dict: {variable_dict}")
+        if colorbar_max is None:
+            colorbar_max = df[variable_dict['name']].max()
+        if colorbar_min is None:
+            colorbar_min = df[variable_dict['name']].min()
+        print(f"colorbar_max: {colorbar_max}, colorbar_min: {colorbar_min}")
 
         print(f"num_ds: {num_ds}, num_rows: {num_rows}, num_cols: {num_cols}, slider: {slider}")
 
@@ -147,8 +155,8 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                     y=y_unique,
                     z=v_disp_2d,
                     colorscale='RdBu_r',
-                    cmin=-max_abs_value,
-                    cmax=max_abs_value,
+                    cmin=-colorbar_min,
+                    cmax=colorbar_max,
                     colorbar=dict(title=f"{variable_dict['name']} ({variable_dict['unit']})")
                 ), row=row, col=col)
 
@@ -179,8 +187,8 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
                     x=x_unique,
                     y=y_unique,
                     z=v_disp_2d,
-                    zmin=-max_abs_value,
-                    zmax=max_abs_value,
+                    zmin=colorbar_min,
+                    zmax=colorbar_max,
                     colorscale='RdBu_r',
                     colorbar=dict(title=f"{variable_dict['name']} ({variable_dict['unit']})")
                 ), row=row, col=col)
@@ -259,7 +267,7 @@ def cross_section_plots(df, variable_dict, slider=0):
 
         # Customize layout
         fig.update_layout(
-            title=f"Cross section of {variable_dict['name']} at y={slider}",
+            title=f"Cross section of {variable_dict['name']} at y={slider}m",
             xaxis_title=f"x (m)",
             yaxis_title=f"{variable_dict['name']} ({variable_dict['unit']})",
             legend_title="Dataset Name",

@@ -178,16 +178,29 @@ def get_main_page():
                                                                     options=[],
                                                                     value=""
                                                                 ),
+                                                                dbc.Label("Colorbar custom range"),
+                                                                html.Div([
+                                                                    dbc.Row([
+                                                                        dbc.Col(
+                                                                            dbc.Input(id="colorbar-min", type="number",
+                                                                                      placeholder="Min", step=0.1),
+                                                                            width=6),
+                                                                        dbc.Col(
+                                                                            dbc.Input(id="colorbar-max", type="number",
+                                                                                      placeholder="Max", step=0.1),
+                                                                            width=6)
+                                                                    ])
+                                                                ]),
                                                                 dbc.Label(
-                                                                    "Cross section slider (move cross section along y axis)"),
+                                                                    "Cross section slider (move cross section along y axis) in km"),
                                                                 dcc.Slider(id='slider-gc-surface',
-                                                                           min=-100000,
-                                                                           max=100000,
+                                                                           min=-100,
+                                                                           max=100,
                                                                            step=5000,
                                                                            value=0,
                                                                            marks={i: str(i) for i in
-                                                                                  range(-100000, 100000 + 1,
-                                                                                        (100000 + 100000) // 10)}
+                                                                                  range(-100, 100 + 1,
+                                                                                        (100 + 100) // 10)}
                                                                            ),  # For cross-section update
                                                             ]
                                                             )

@@ -29,11 +29,13 @@ def get_callbacks(app):
                       dash.dependencies.State('main-graph', 'figure'),
                       dash.dependencies.State('upload-data', "contents"),
                       dash.dependencies.State('upload-data', 'filename'),
+                      dash.dependencies.State('colorbar-min', 'value'),
+                      dash.dependencies.State('colorbar-max', 'value'),
                   ]
                   )
     def display_plots(ds_update_clicks, graph_control_nclick, benchmark_params, file_type_name, dataset_list, receiver,
                       benchmark_id, slider_gc_surface, surface_plot_type, surface_plot_var, x_axis_sel, current_fig, upload_data,
-                      filename):
+                      filename, colorbar_min, colorbar_max):
         """
         Update the time-series graph based on user inputs.
 
@@ -81,21 +83,14 @@ def get_callbacks(app):
             ds_update = pd.DataFrame()
 
         if plot_type == 'surface':
-            # check trigger to prevent full update if just slider from surface
-            trigger = ctx.triggered_id
-            if trigger == "slider-gc-surface":
-                fig = go.Figure(current_fig)
-                slider_only = True
-                plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
-                return fig, cross_section_plots(ds_update, plot_params, slider_gc_surface), {'display': 'block'}
-            else:
-                fig = go.Figure()
-                slider_only = False
-                plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
-                main_graph, main_graph_style = main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type,
-                                                                          slider_gc_surface, slider_only)
-                sub_graph = cross_section_plots(ds_update, plot_params, slider_gc_surface)
-                sub_graph_style = {'display': 'block'}
+            fig = go.Figure()
+            slider_only = False
+            plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
+            cross_section_value = slider_gc_surface*1000 #switch back to m from km
+            main_graph, main_graph_style = main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type,
+                                                                      cross_section_value, slider_only, colorbar_min, colorbar_max)
+            sub_graph = cross_section_plots(ds_update, plot_params, cross_section_value)
+            sub_graph_style = {'display': 'block'}
         else:
             x_axis = next((item for item in plots_list if item['name'] == x_axis_sel), plots_list[0])
 
