@@ -9,6 +9,11 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_s3_notifications as s3_notifications,
     aws_lambda as _lambda, Duration,
+    aws_dynamodb as dynamodb,
+    aws_stepfunctions as sfn,
+    aws_stepfunctions_tasks as tasks,
+    aws_events_targets as targets,
+    aws_events as events,
 )
 from constructs import Construct
 
@@ -172,6 +177,18 @@ class DashboardStack(Stack):
             repository_name="vv-lambda-upload",
         )
 
+        # Create the DynamoDB table
+        table = dynamodb.Table(
+            self, "DETFileProcessingStatusTable",
+            table_name="DETFileProcessingStatus",
+            partition_key=dynamodb.Attribute(name="userId", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="fileId", type=dynamodb.AttributeType.STRING),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,  # Cost-effective for low traffic
+            time_to_live_attribute="expiry",  # Optional: Enable TTL for automatic cleanup
+        )
+        # Grant the Lambda function permissions to read/write to DynamoDB
+        table.grant_read_write_data(lambda_role)
+
         # Lambda function to use the manually pushed Docker image
         process_uploads = _lambda.DockerImageFunction(
             self,
@@ -179,16 +196,127 @@ class DashboardStack(Stack):
             function_name="process_uploads",
             code=_lambda.DockerImageCode.from_ecr(
                 repository=repo,
-                tag="2.0.6",
+                tag="2.0.11",
             ),
             timeout=Duration.minutes(5),
             memory_size=8192,
+            environment={
+                "TABLE_NAME": table.table_name,  # Pass the table name to the Lambda
+            },
             role=lambda_role,
         )
 
-        # Add notification to trigger Lambda when a folder is uploaded
-        s3_bucket.add_event_notification(
-            s3.EventType.OBJECT_CREATED,
-            s3_notifications.LambdaDestination(process_uploads),
-            s3.NotificationKeyFilter(prefix="upload/")
+        # Create the failure notification Lambda function
+        notify_fail = _lambda.Function(
+            self, "NotifyFailLambda",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="index.handler",
+            code=_lambda.Code.from_inline(
+                """
+import json
+import os
+import boto3
+
+def handler(event, context):
+    # Extract bucket name and object key from the S3 event
+    print(event)
+    bucket_name = event["detail"]["bucket"]["name"]
+    zip_key = event["detail"]["object"]["key"]
+    
+    # Get user metadata from the S3 object
+    s3 = boto3.client("s3")
+    response = s3.head_object(Bucket=bucket_name, Key=object_key)
+    user_metadata = response.get("Metadata", {})
+    
+    # Extract userId and fileId from metadata
+    user_id = user_metadata.get("userid")
+    file_id = os.path.basename(object_key)
+    
+    if not user_id:
+        raise ValueError("userId not found in S3 object metadata")
+    
+    # Update DynamoDB with failure status
+    dynamodb = boto3.resource("dynamodb")
+    table = dynamodb.Table(os.environ["TABLE_NAME"])
+    table.update_item(
+        Key={"userId": user_id, "fileId": file_id},
+        UpdateExpression="SET #status = :status, #error = :error",
+        ExpressionAttributeNames={
+            "#status": "status",
+            "#error": "error",
+        },
+        ExpressionAttributeValues={
+            ":status": "failed",
+            ":error": event.get("Error", "Unknown error"),
+        },
+    )
+    
+    return {
+        "status": "failed",
+        "userId": user_id,
+        "fileId": file_id,
+    }
+                """
+            ),
+            environment={
+                "TABLE_NAME": table.table_name,  # Pass the DynamoDB table name
+            },
         )
+
+        # Grant permissions to the failure notification Lambda function
+        s3_bucket.grant_read(notify_fail)  # Grant read access to S3
+        table.grant_write_data(notify_fail)  # Grant write access to DynamoDB
+
+        # Create the Step Functions state machine
+        process_file_task = tasks.LambdaInvoke(
+            self, "InvokeProcessUploads",
+            lambda_function=process_uploads,
+            payload_response_only=True,
+        )
+
+        notify_failure_task = tasks.LambdaInvoke(
+            self, "InvokeNotifyFail",
+            lambda_function=notify_fail,
+            payload_response_only=True,
+        )
+
+        definition = (
+            process_file_task
+            .add_catch(
+                notify_failure_task,
+                errors=["States.ALL"],  # Catch all errors
+            )
+        )
+
+        state_machine = sfn.StateMachine(
+            self, "FileProcessingStateMachine",
+            definition=definition,
+            timeout=Duration.minutes(10),  # Set a timeout for the state machine
+        )
+
+        # Grant the state machine permissions to invoke the Lambda functions
+        process_uploads.grant_invoke(state_machine)
+        notify_fail.grant_invoke(state_machine)
+
+        # Create an EventBridge rule to trigger the state machine on S3 upload
+        rule = events.Rule(
+            self, "S3UploadRule",
+            event_pattern=events.EventPattern(
+                source=["aws.s3"],
+                detail_type=["Object Created", "Object Updated"],
+                detail={
+                    "bucket": {"name": [s3_bucket.bucket_name]},
+                    "object": {"key": [{"prefix": "upload/"}]},
+                },
+            ),
+        )
+
+        # Add the state machine as a target for the EventBridge rule
+        rule.add_target(targets.SfnStateMachine(state_machine))
+
+        # # Add S3 event notification to trigger the state machine
+        # s3_bucket.add_event_notification(
+        #     s3.EventType.OBJECT_CREATED,
+        #     s3_notifications.LambdaDestination(process_uploads),
+        #     s3.NotificationKeyFilter(prefix="upload/")  # Only trigger for objects in "upload/"
+        # )
