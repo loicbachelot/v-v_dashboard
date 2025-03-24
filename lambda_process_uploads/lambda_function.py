@@ -161,8 +161,9 @@ def handler(event, context):
     try:
         print(event)
         # for record in event['Records']:
-        bucket_name = event["detail"]["bucket"]["name"]
-        zip_key = event["detail"]["object"]["key"]
+        s3_detail = event.get("s3Event", {}).get("detail", {})
+        bucket_name = s3_detail.get("bucket", {}).get("name", "unknown")
+        zip_key = s3_detail.get("object", {}).get("key", "unknown")
 
         # Extract metadata from the uploaded file
         response = s3.head_object(Bucket=bucket_name, Key=zip_key)

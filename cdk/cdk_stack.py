@@ -196,7 +196,7 @@ class DashboardStack(Stack):
             function_name="process_uploads",
             code=_lambda.DockerImageCode.from_ecr(
                 repository=repo,
-                tag="2.0.11",
+                tag="2.0.12",
             ),
             timeout=Duration.minutes(5),
             memory_size=8192,
@@ -217,47 +217,45 @@ import json
 import os
 import boto3
 
+s3 = boto3.client("s3")
+
 def handler(event, context):
-    # Extract bucket name and object key from the S3 event
-    print(event)
-    bucket_name = event["detail"]["bucket"]["name"]
-    zip_key = event["detail"]["object"]["key"]
-    
-    # Get user metadata from the S3 object
-    s3 = boto3.client("s3")
-    response = s3.head_object(Bucket=bucket_name, Key=object_key)
-    user_metadata = response.get("Metadata", {})
-    
-    # Extract userId and fileId from metadata
-    user_id = user_metadata.get("userid")
-    file_id = os.path.basename(object_key)
-    
-    if not user_id:
-        raise ValueError("userId not found in S3 object metadata")
-    
-    # Update DynamoDB with failure status
-    dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table(os.environ["TABLE_NAME"])
-    table.update_item(
-        Key={"userId": user_id, "fileId": file_id},
-        UpdateExpression="SET #status = :status, #error = :error",
-        ExpressionAttributeNames={
-            "#status": "status",
-            "#error": "error",
-        },
-        ExpressionAttributeValues={
-            ":status": "failed",
-            ":error": event.get("Error", "Unknown error"),
-        },
-    )
-    
-    return {
-        "status": "failed",
-        "userId": user_id,
-        "fileId": file_id,
-    }
+    try:
+        print("Raw failure event:", json.dumps(event))
+        
+        # Fast extraction without S3 API calls
+        s3_detail = event.get("s3Event", {}).get("detail", {})
+        bucket = s3_detail.get("bucket", {}).get("name", "unknown")
+        key = s3_detail.get("object", {}).get("key", "unknown")
+        # Extract metadata from the uploaded file
+        response = s3.head_object(Bucket=bucket, Key=key)
+        user_metadata = response.get('Metadata', {})
+        user_id = user_metadata.get("userid")
+        
+        print(f"bucket={bucket}, key={key}, user_id={user_id}")
+        
+        # Minimal DynamoDB update
+        dynamodb = boto3.resource("dynamodb")
+        table = dynamodb.Table(os.environ["TABLE_NAME"])
+        table.update_item(
+            Key={"userId": user_id, "fileId": os.path.basename(key)},
+            UpdateExpression="SET #s = :s, #e = :e",
+            ExpressionAttributeNames={"#s": "status", "#e": "error"},
+            ExpressionAttributeValues={
+                ":s": "failed",
+                ":e": event.get("error", "Timeout during processing")
+            }
+        )
+        
+        return {"status": "failure_recorded"}
+        
+    except Exception as e:
+        print(f"CRITICAL: Failure handler failed: {str(e)}")
+        raise
                 """
             ),
+            timeout=Duration.seconds(20),  # Short timeout is sufficient
+            memory_size=512,  # Minimal memory needed
             environment={
                 "TABLE_NAME": table.table_name,  # Pass the DynamoDB table name
             },
@@ -267,26 +265,43 @@ def handler(event, context):
         s3_bucket.grant_read(notify_fail)  # Grant read access to S3
         table.grant_write_data(notify_fail)  # Grant write access to DynamoDB
 
-        # Create the Step Functions state machine
-        process_file_task = tasks.LambdaInvoke(
-            self, "InvokeProcessUploads",
+        store_event_step = sfn.Pass(
+            self, "StoreOriginalEvent",
+            parameters={
+                "originalEvent": sfn.JsonPath.entire_payload
+            }
+        )
+
+        process_task = tasks.LambdaInvoke(
+            self, "ProcessFile",
             lambda_function=process_uploads,
-            payload_response_only=True,
+            payload=sfn.TaskInput.from_object({
+                "s3Event": sfn.JsonPath.string_at("$.originalEvent")
+            }),
+            result_path="$.lambdaResult"
         )
 
-        notify_failure_task = tasks.LambdaInvoke(
-            self, "InvokeNotifyFail",
+        handle_failure_task = tasks.LambdaInvoke(
+            self, "HandleFailure",
             lambda_function=notify_fail,
-            payload_response_only=True,
+            payload=sfn.TaskInput.from_object({
+                "s3Event": sfn.JsonPath.string_at("$.originalEvent"),
+                "error": sfn.JsonPath.string_at("$.errorInfo.Error")
+            })
         )
 
+        # 2. Create the chain with error handling
         definition = (
-            process_file_task
-            .add_catch(
-                notify_failure_task,
-                errors=["States.ALL"],  # Catch all errors
+            store_event_step
+            .next(
+                process_task.add_catch(
+                    handle_failure_task,
+                    errors=["States.ALL"],
+                    result_path="$.errorInfo"
+                )
             )
         )
+
 
         state_machine = sfn.StateMachine(
             self, "FileProcessingStateMachine",
