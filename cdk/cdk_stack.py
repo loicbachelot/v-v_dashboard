@@ -14,6 +14,7 @@ from aws_cdk import (
     aws_stepfunctions_tasks as tasks,
     aws_events_targets as targets,
     aws_events as events,
+    aws_apigateway as apigateway, CfnOutput,
 )
 from constructs import Construct
 
@@ -329,9 +330,43 @@ def handler(event, context):
         # Add the state machine as a target for the EventBridge rule
         rule.add_target(targets.SfnStateMachine(state_machine))
 
-        # # Add S3 event notification to trigger the state machine
-        # s3_bucket.add_event_notification(
-        #     s3.EventType.OBJECT_CREATED,
-        #     s3_notifications.LambdaDestination(process_uploads),
-        #     s3.NotificationKeyFilter(prefix="upload/")  # Only trigger for objects in "upload/"
-        # )
+        # Create the status check Lambda function
+        status_check_lambda = _lambda.Function(
+            self, "StatusCheckLambda",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler="handler.lambda_handler",
+            code=_lambda.Code.from_asset("./lambda_status_check"),  # Create this directory
+            environment={
+                "TABLE_NAME": table.table_name,
+            },
+            timeout=Duration.seconds(10),
+            memory_size=256,
+            role=lambda_role,  # Reuse your existing role
+        )
+
+        # Grant the Lambda read access to DynamoDB
+        table.grant_read_data(status_check_lambda)
+
+        api = apigateway.RestApi(
+            self, "FileStatusAPI",
+            default_cors_preflight_options={
+                "allow_origins": ["*"],  # Allow all origins temporarily
+                "allow_methods": ["GET", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"]
+            }
+        )
+
+        status_resource = api.root.add_resource("status")
+        status_resource.add_method(
+            "GET",
+            apigateway.LambdaIntegration(status_check_lambda),
+            authorization_type=apigateway.AuthorizationType.IAM
+        )
+
+        # Output the API endpoint URL for reference
+        CfnOutput(
+            self, "StatusAPIEndpoint",
+            value=api.url,
+            description="Endpoint for checking processing status",
+        )
+
