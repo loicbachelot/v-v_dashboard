@@ -335,7 +335,7 @@
       "file_type": "csv"
     },
     {
-      "name": "Tsunami",
+      "name": "Sea Surface",
       "content": "Tsunami sea surface height anomaly",
       "graph_type": "surface",
       "list_of_receivers": [
@@ -372,7 +372,7 @@
           "description": "distance along y"
         },
         {
-          "name": "ssha",
+          "name": "eta",
           "unit": "m",
           "description": "sea surface height anomaly"
         }
@@ -381,7 +381,7 @@
       "file_type": "csv"
     },
     {
-      "name": "Surface deformation",
+      "name": "Seafloor",
       "content": "surface deformation at end of simulation",
       "graph_type": "surface",
       "list_of_receivers": [

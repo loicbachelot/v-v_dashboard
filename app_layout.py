@@ -18,7 +18,7 @@ def get_main_page():
                                 href="https://cascadiaquakes.org/",
                                 children=[
                                     html.Img(
-                                        src='https://cascadiaquakes.org/wp-content/uploads/2023/10/Crescent-Logos-Horizontal-White-230x62.png'
+                                        src='assets/Crescent_Logo.png', style={'height': '60px'}
                                     ),
                                 ]
                             ),
@@ -39,8 +39,8 @@ def get_main_page():
                                 href="https://www.nsf.gov",
                                 children=[
                                     html.Img(
-                                        src='https://new.nsf.gov/themes/custom/nsf_theme/components/sdc-components/molecules/logo/logo-desktop.svg',
-                                        style={'width': '40%', 'height': 'auto'}
+                                        src='assets/USNSF_Logo.png',
+                                        style={'height': '90px'}
                                     ),
                                 ]
                             ),
