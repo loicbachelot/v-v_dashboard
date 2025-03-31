@@ -2,6 +2,7 @@ import os
 import json
 import warnings
 import zipfile
+from datetime import datetime
 
 import boto3
 import pandas as pd
@@ -9,9 +10,13 @@ from io import StringIO, BytesIO
 
 from scipy.interpolate import NearestNDInterpolator, griddata
 import numpy as np
+from botocore.exceptions import NoCredentialsError, ClientError
 
-s3 = boto3.client('s3')
-
+# Initialize AWS clients
+s3 = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
+table_name = os.environ["TABLE_NAME"]
+table = dynamodb.Table(table_name)
 
 def convert_seconds_to_time(seconds):
     years = seconds / (365.25 * 24 * 3600)
@@ -153,14 +158,35 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
 
 
 def handler(event, context):
-    for record in event['Records']:
-        bucket_name = record['s3']['bucket']['name']
-        zip_key = record['s3']['object']['key']
+    try:
+        print(event)
+        # for record in event['Records']:
+        s3_detail = event.get("s3Event", {}).get("detail", {})
+        bucket_name = s3_detail.get("bucket", {}).get("name", "unknown")
+        zip_key = s3_detail.get("object", {}).get("key", "unknown")
 
         # Extract metadata from the uploaded file
         response = s3.head_object(Bucket=bucket_name, Key=zip_key)
         user_metadata = response.get('Metadata', {})
         print(f'Metadata: {user_metadata}')
+
+        user_id = user_metadata.get("userid")
+        file_id = os.path.basename(zip_key)
+        if not user_id:
+            print(f'No userid found for {zip_key}')
+            return {"error": "userId not found in S3 object metadata"}
+
+        # Write initial status to DynamoDB
+        timestamp = datetime.utcnow().isoformat() + "Z"  # ISO format with UTC timezone
+
+        table.put_item(
+            Item={
+                "userId": user_id,
+                "fileId": file_id,
+                "status": "processing",
+                "timestamp": timestamp,  # Add timestamp if available
+            }
+        )
 
         # Extract benchmark_pb, code_name, and version from the zip key
         parts = zip_key.split('/')
@@ -172,3 +198,31 @@ def handler(event, context):
             process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_metadata)
         except Exception as e:
             print(f"Error processing {zip_key}: {e}")
+            if user_id and file_id:
+                table.update_item(
+                    Key={"userId": user_id, "fileId": file_id},
+                    UpdateExpression="SET #status = :status, #error = :error",
+                    ExpressionAttributeNames={
+                        "#status": "status",
+                        "#error": "error",
+                    },
+                    ExpressionAttributeValues={
+                        ":status": "failed",
+                        ":error": str(e),
+                    },
+                )
+            return {"error": f"Error processing {zip_key}: {e}"}
+
+        # Update status to "completed"
+        table.update_item(
+            Key={"userId": user_id, "fileId": file_id},
+            UpdateExpression="SET #status = :status",
+            ExpressionAttributeNames={"#status": "status"},
+            ExpressionAttributeValues={":status": "completed"},
+        )
+        return {"status": "completed"}
+
+    except NoCredentialsError:
+        return {"error": "AWS credentials not found"}
+    except ClientError as e:
+        return {"error": str(e)}
