@@ -111,10 +111,17 @@ def get_main_page():
                                                     dbc.Col(children=[
                                                         dcc.Upload(id='upload-data',
                                                                    children=[
-                                                                       dbc.Button('Upload File', color="secondary")],
+                                                                       dbc.Button('Upload File', color="secondary"),
+                                                                   ],
                                                                    multiple=False,
                                                                    style={'margin': '10px'}
                                                                    ),
+                                                        dbc.Alert(
+                                                            "Warning: Single file upload is not supported for surface files.",
+                                                            color="warning",
+                                                            dismissable=True,
+                                                            style={'margin': '10px'}
+                                                        ),
                                                         html.Div([html.H5("Uploaded file:", style={'color': '#000000'}),
                                                                   html.P(id="upload-filename")])
                                                     ]
@@ -165,14 +172,36 @@ def get_main_page():
                                                                     ],
                                                                     value="heatmap"
                                                                 ),
-                                                                dbc.Button("submit",
-                                                                           id='submit-button-gc',
-                                                                           n_clicks=0,
-                                                                           color="primary",
-                                                                           style={'marginBottom': '10px',
-                                                                                  'marginLeft': '10px'}
-
-                                                                           ),
+                                                                dbc.Label("Variable selection"),
+                                                                dbc.Select(
+                                                                    id="surface-plot-var",
+                                                                    options=[],
+                                                                    value=""
+                                                                ),
+                                                                dbc.Label("Colorbar custom range"),
+                                                                html.Div([
+                                                                    dbc.Row([
+                                                                        dbc.Col(
+                                                                            dbc.Input(id="colorbar-min", type="number",
+                                                                                      placeholder="Min", step=0.1),
+                                                                            width=6),
+                                                                        dbc.Col(
+                                                                            dbc.Input(id="colorbar-max", type="number",
+                                                                                      placeholder="Max", step=0.1),
+                                                                            width=6)
+                                                                    ])
+                                                                ]),
+                                                                dbc.Label(
+                                                                    "Cross section slider (move cross section along y axis) in km"),
+                                                                dcc.Slider(id='slider-gc-surface',
+                                                                           min=-100,
+                                                                           max=100,
+                                                                           step=5000,
+                                                                           value=0,
+                                                                           marks={i: str(i) for i in
+                                                                                  range(-100, 100 + 1,
+                                                                                        (100 + 100) // 10)}
+                                                                           ),  # For cross-section update
                                                             ]
                                                             )
                                                         ],
@@ -181,12 +210,21 @@ def get_main_page():
                                                     dbc.Row(
                                                         id='graph-control-time',
                                                         children=[
-                                                            dbc.Col(
-                                                                dbc.Label("No graph control for this plot type")
+                                                            dbc.Col([
+                                                                dbc.Label("Choose x axis variable"),
+                                                                dbc.Select(
+                                                                    id="time-xaxis-var",
+                                                                    options=[
+                                                                        {"label": "Time", "value": "t"},
+                                                                    ],
+                                                                    value="t"
+                                                                )]
                                                             )
                                                         ],
                                                         style={"display": "none"}
                                                     ),
+                                                    dbc.Button('Update graphs', id="update-graphs",
+                                                               color="primary", style={'margin': '10px'}),
                                                 ])
                                     ]
                                              ),
@@ -195,9 +233,9 @@ def get_main_page():
                                 width=3,
                             ),
                             dbc.Col([
-                                dcc.Loading(id="ls-loading-2", children=[
+                                dcc.Loading(id="ls-loading-1", children=[
                                     dcc.Graph(
-                                        id='time-series-graph',
+                                        id='main-graph',
                                         style={'responsive': True,
                                                'width': '100%',
                                                'height': '85vh'},
@@ -210,6 +248,24 @@ def get_main_page():
                                                     'filename': 'export_plots',
                                                     'scale': 3
                                                     # Multiply title/legend/axis/canvas sizes by this factor
+                                                }
+                                                }
+                                    ),
+                                ], type="default"),
+                                dcc.Loading(id="ls-loading-2", children=[
+                                    dcc.Graph(
+                                        id='sub-graph',
+                                        style={'responsive': True,
+                                               'width': '100%',
+                                               'height': '50vh'},
+                                        animate=False,
+                                        config={'displayModeBar': True,
+                                                'displaylogo': False,
+                                                'scrollZoom': True,
+                                                'toImageButtonOptions': {
+                                                    'format': 'png',  # one of png, svg, jpeg, webp
+                                                    'filename': 'export_plots',
+                                                    'scale': 3
                                                 }
                                                 }
                                     ),

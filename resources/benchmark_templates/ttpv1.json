@@ -48,44 +48,34 @@
           "description": "time"
         },
         {
-          "name": "h-disp",
+          "name": "x-disp",
           "unit": "m",
-          "description": "horizontal displacement"
+          "description": "x displacement"
         },
         {
-          "name": "h-vel",
+          "name": "x-vel",
           "unit": "m/s",
-          "description": "horizontal velocity"
+          "description": "x velocity"
         },
         {
-          "name": "v-disp",
+          "name": "y-disp",
           "unit": "m",
-          "description": "vertical displacement"
+          "description": "y displacement"
         },
         {
-          "name": "v-vel",
+          "name": "y-vel",
           "unit": "m/s",
-          "description": "vertical velocity"
+          "description": "y velocity"
         },
         {
-          "name": "n-disp",
+          "name": "z-disp",
           "unit": "m",
-          "description": "normal displacement"
+          "description": "z displacement"
         },
         {
-          "name": "n-vel",
+          "name": "z-vel",
           "unit": "m/s",
-          "description": "normal velocity"
-        },
-        {
-          "name": "e_xx",
-          "unit": "-",
-          "description": "longitudinal strain in x-direction"
-        },
-        {
-          "name": "e_yy",
-          "unit": "-",
-          "description": "longitudinal strain in y-direction"
+          "description": "z velocity"
         }
       ],
       "prefix": "el_sf_body",
@@ -138,37 +128,42 @@
           "description": "time"
         },
         {
-          "name": "h-disp",
+          "name": "x-disp",
           "unit": "m",
-          "description": "horizontal displacement"
+          "description": "x displacement"
         },
         {
-          "name": "h-vel",
+          "name": "x-vel",
           "unit": "m/s",
-          "description": "horizontal velocity"
+          "description": "x velocity"
         },
         {
-          "name": "v-disp",
+          "name": "y-disp",
           "unit": "m",
-          "description": "vertical displacement"
+          "description": "y displacement"
         },
         {
-          "name": "v-vel",
+          "name": "y-vel",
           "unit": "m/s",
-          "description": "vertical velocity"
+          "description": "y velocity"
         },
         {
-          "name": "n-disp",
+          "name": "z-disp",
           "unit": "m",
-          "description": "normal displacement"
+          "description": "z displacement"
         },
         {
-          "name": "n-vel",
+          "name": "z-vel",
           "unit": "m/s",
-          "description": "normal velocity"
+          "description": "z velocity"
         },
         {
-          "name": "p",
+          "name": "pprime",
+          "unit": "Pa",
+          "description": "pressure"
+        },
+        {
+          "name": "dp",
           "unit": "Pa",
           "description": "pressure"
         }
@@ -223,37 +218,42 @@
           "description": "time"
         },
         {
-          "name": "h-disp",
+          "name": "x-disp",
           "unit": "m",
-          "description": "horizontal displacement"
+          "description": "x displacement"
         },
         {
-          "name": "h-vel",
+          "name": "x-vel",
           "unit": "m/s",
-          "description": "horizontal velocity"
+          "description": "x velocity"
         },
         {
-          "name": "v-disp",
+          "name": "y-disp",
           "unit": "m",
-          "description": "vertical displacement"
+          "description": "y displacement"
         },
         {
-          "name": "v-vel",
+          "name": "y-vel",
           "unit": "m/s",
-          "description": "vertical velocity"
+          "description": "y velocity"
         },
         {
-          "name": "n-disp",
+          "name": "z-disp",
           "unit": "m",
-          "description": "normal displacement"
+          "description": "z displacement"
         },
         {
-          "name": "n-vel",
+          "name": "z-vel",
           "unit": "m/s",
-          "description": "normal velocity"
+          "description": "z velocity"
         },
         {
-          "name": "p",
+          "name": "pprime",
+          "unit": "Pa",
+          "description": "pressure"
+        },
+        {
+          "name": "dp",
           "unit": "Pa",
           "description": "pressure"
         }
@@ -342,18 +342,22 @@
         "tsunami030s",
         "tsunami060s",
         "tsunami090s",
-        "tsunami120s"
+        "tsunami120s",
+        "tsunami150s",
+        "tsunami180s",
+        "tsunami210s",
+        "tsunami240s"
       ],
       "grid": {
         "x": {
           "min": -100000.0,
           "max": 100000.0,
-          "n": 1000
+          "n": 2001
         },
         "y": {
           "min": -100000.0,
           "max": 100000.0,
-          "n": 1000
+          "n": 2001
         }
       },
       "var_list": [
@@ -374,6 +378,55 @@
         }
       ],
       "prefix": "tsunami",
+      "file_type": "csv"
+    },
+    {
+      "name": "Surface deformation",
+      "content": "surface deformation at end of simulation",
+      "graph_type": "surface",
+      "list_of_receivers": [
+        "surfdef"
+      ],
+      "grid": {
+        "x": {
+          "min": -100000.0,
+          "max": 100000.0,
+          "n": 2001
+        },
+        "y": {
+          "min": -100000.0,
+          "max": 100000.0,
+          "n": 2001
+        }
+      },
+      "var_list": [
+        {
+          "name": "x",
+          "unit": "m",
+          "description": "distance along x"
+        },
+        {
+          "name": "y",
+          "unit": "m",
+          "description": "distance along y"
+        },
+        {
+          "name": "x-disp",
+          "unit": "m",
+          "description": "horizontal displacement perpendicular to strike"
+        },
+        {
+          "name": "y-disp",
+          "unit": "m",
+          "description": "horizontal displacement parallel to strike"
+        },
+        {
+          "name": "z-disp",
+          "unit": "m",
+          "description": "vertical displacement"
+        }
+      ],
+      "prefix": "surfdef",
       "file_type": "csv"
     }
   ]

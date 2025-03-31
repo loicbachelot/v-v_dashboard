@@ -106,7 +106,7 @@ def get_plots_from_json(json_data, file_name):
 
     Parameters:
         json_data (dict): The JSON data containing file information.
-        file_name (str): The file type to filter files (e.g., "csv").
+        file_name (str): The file type to filter files (e.g., "surfdef").
 
     Returns:
         list: A list of dictionaries with variable names and units to plot against time.
@@ -117,12 +117,12 @@ def get_plots_from_json(json_data, file_name):
     for file_info in json_data['files']:
         if file_info['name'] == file_name:
             for var in file_info['var_list']:
-                if var['name'] not in ['t', 'x', 'y']:  # Exclude "time", "x" and "y"
+                if var['name'] not in ['x', 'y']:  # "x" and "y"
                     plots.append(var)
     return plots
 
 
-def get_upload_df(data, filename):
+def get_upload_df(data, filename, var_list):
     """
     Convert uploaded data to a DataFrame and add time columns.
 
@@ -139,8 +139,13 @@ def get_upload_df(data, filename):
         content_type, content_string = data.split(',')
         decoded = base64.b64decode(content_string)
         df = pd.read_csv(io.StringIO(decoded.decode('utf-8')), comment='#', delim_whitespace=True)
+        expected_columns = [var['name'] for var in var_list]
+        print(f"expected_columns: {expected_columns}")
+        print(f"df.columns: {list(df.columns)}")
+        if list(df.columns) != expected_columns:
+            print("file does not have the expected columns")
+            return None
         df['dataset_name'] = filename
-        df['years'], df['days'], df['hours'], df['seconds'] = convert_seconds_to_time(df['t'])
         return df
     except Exception as e:
         print(f"Error reading uploaded data: {e}")

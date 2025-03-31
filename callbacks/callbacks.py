@@ -1,31 +1,41 @@
 import html
 import dash
 import pandas as pd
-from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic
+import plotly.graph_objects as go
+from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic_v2, cross_section_plots
 from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark, get_metadata, get_benchmark_params, \
     get_plots_from_json
-from dash import html, callback_context, no_update
+from dash import html, ctx, no_update
 
 
 def get_callbacks(app):
-    @app.callback(dash.dependencies.Output('time-series-graph', 'figure'),
+    @app.callback(dash.dependencies.Output('main-graph', 'figure'),
+                  dash.dependencies.Output('main-graph', 'style'),
+                  dash.dependencies.Output('sub-graph', 'figure'),
+                  dash.dependencies.Output('sub-graph', 'style'),
                   [
                       dash.dependencies.Input('show-graphs', "n_clicks"),
-                      dash.dependencies.Input('submit-button-gc', 'n_clicks'),
-                      dash.dependencies.Input('benchmark-params', 'data'),
-                      dash.dependencies.Input('file-type-selector', "value"),
-                  ],
+                      dash.dependencies.Input('update-graphs', 'n_clicks'),
+                      dash.dependencies.Input('benchmark-params', 'data'), ],
                   [
+                      dash.dependencies.State('file-type-selector', "value"),
                       dash.dependencies.State('dataset-choice', "value"),
                       dash.dependencies.State('receiver-selector', "value"),
                       dash.dependencies.State('url', "search"),
+                      dash.dependencies.State('slider-gc-surface', 'value'),
+                      dash.dependencies.State('surface-plot-type', 'value'),
+                      dash.dependencies.State('surface-plot-var', "value"),
+                      dash.dependencies.State('time-xaxis-var', "value"),
+                      dash.dependencies.State('main-graph', 'figure'),
                       dash.dependencies.State('upload-data', "contents"),
                       dash.dependencies.State('upload-data', 'filename'),
-                      dash.dependencies.State('surface-plot-type', 'value'),
+                      dash.dependencies.State('colorbar-min', 'value'),
+                      dash.dependencies.State('colorbar-max', 'value'),
                   ]
                   )
-    def display_plots(ds_update_clicks, gc_nclicks, benchmark_params, file_type_name, dataset_list, receiver,
-                      benchmark_id, upload_data, filename, surface_plot_type):
+    def display_plots(ds_update_clicks, graph_control_nclick, benchmark_params, file_type_name, dataset_list, receiver,
+                      benchmark_id, slider_gc_surface, surface_plot_type, surface_plot_var, x_axis_sel, current_fig, upload_data,
+                      filename, colorbar_min, colorbar_max):
         """
         Update the time-series graph based on user inputs.
 
@@ -48,14 +58,19 @@ def get_callbacks(app):
                     "xaxis": {"title": "Time"},
                     "yaxis": {"title": "Value"},
                 }
-            }
-        list_df = []
-        plot_type = next((file['graph_type'] for file in benchmark_params['files'] if file['name'] == file_type_name), None)
-        plots_list = get_plots_from_json(benchmark_params, file_type_name)
-        if ds_update_clicks is not None:
-            selected_df = get_df(benchmark_id, dataset_list, receiver)
-            upload_df = get_upload_df(upload_data, filename)
+            }, {'width': '100%', 'height': '85hv'}, {}, {'display': 'none'}
 
+        list_df = []
+        plot_type = next((file['graph_type'] for file in benchmark_params['files'] if file['name'] == file_type_name),
+                         None)
+        plots_list = get_plots_from_json(benchmark_params, file_type_name)
+        if ds_update_clicks is not None or graph_control_nclick is not None:
+            selected_df = get_df(benchmark_id, dataset_list, receiver)
+            # suface 1 file upload not supported for now due to interpolations needs
+            if plot_type != 'surface':
+                upload_df = get_upload_df(upload_data, filename, plots_list)
+            else:
+                upload_df = None
             if upload_df is not None:
                 list_df.append(upload_df)
             if selected_df is not None:
@@ -68,8 +83,22 @@ def get_callbacks(app):
             ds_update = pd.DataFrame()
 
         if plot_type == 'surface':
-            return main_surface_plot_dynamic(ds_update, plots_list[0], surface_plot_type)
-        return main_time_plot_dynamic(ds_update, plots_list)
+            fig = go.Figure()
+            slider_only = False
+            plot_params = [item for item in plots_list if item['name'] == surface_plot_var][0]
+            cross_section_value = slider_gc_surface*1000 #switch back to m from km
+            main_graph, main_graph_style = main_surface_plot_dynamic_v2(ds_update, fig, plot_params, surface_plot_type,
+                                                                      cross_section_value, slider_only, colorbar_min, colorbar_max)
+            sub_graph = cross_section_plots(ds_update, plot_params, cross_section_value)
+            sub_graph_style = {'display': 'block'}
+        else:
+            x_axis = next((item for item in plots_list if item['name'] == x_axis_sel), plots_list[0])
+
+            main_graph, main_graph_style = main_time_plot_dynamic(ds_update, plots_list, x_axis)
+            sub_graph = go.Figure()
+            sub_graph_style = {'display': 'none'}
+
+        return main_graph, main_graph_style, sub_graph, sub_graph_style
 
     ### Callback 1: Generate Links Based on Dataset Choice and Benchmark ID
     @app.callback(
@@ -103,7 +132,7 @@ def get_callbacks(app):
         prevent_initial_call=True
     )
     def handle_modal(file_clicks, close_click, is_open, benchmark_id):
-        triggered = callback_context.triggered
+        triggered = ctx.triggered
         # Debug: Check what triggered the callback
         if not triggered:
             return "", False  # No valid trigger, return modal closed.
@@ -193,8 +222,14 @@ def get_callbacks(app):
         return list_files, list_files[0]
 
     @app.callback(
-        dash.dependencies.Output('receiver-selector', 'options'),
-        dash.dependencies.Output('receiver-selector', 'value'),
+        [dash.dependencies.Output('receiver-selector', 'options'),
+         dash.dependencies.Output('receiver-selector', 'value'),
+         dash.dependencies.Output('surface-plot-var', 'options'),
+         dash.dependencies.Output('surface-plot-var', 'value'),
+         dash.dependencies.Output('time-xaxis-var', 'options'),
+         dash.dependencies.Output('time-xaxis-var', 'value')
+         ],
+
         [dash.dependencies.Input('file-type-selector', 'value')],
         [dash.dependencies.State('benchmark-params', 'data')]
     )
@@ -214,7 +249,9 @@ def get_callbacks(app):
             return no_update
         for file in benchmark_params['files']:
             if file['name'] == file_selected:
-                return file['list_of_receivers'], ''
+                list_vars = [var['name'] for var in get_plots_from_json(benchmark_params, file_selected)]
+                # returning list vars for file type selected + time (t) for the time series
+                return file['list_of_receivers'], file['list_of_receivers'][0], list_vars, list_vars[-1], list_vars+['t'], 't'
         return no_update
 
     @app.callback(
@@ -223,7 +260,7 @@ def get_callbacks(app):
         [dash.dependencies.Input('file-type-selector', 'value')],
         [dash.dependencies.State('benchmark-params', 'data')]
     )
-    def update_receiver_selector(file_selected, benchmark_params):
+    def update_graph_control(file_selected, benchmark_params):
         graph_type = ''
         if benchmark_params is None:
             return no_update
@@ -237,3 +274,4 @@ def get_callbacks(app):
             return {"display": "block"}, {"display": "none"}
         else:
             return {"display": "none"}, {"display": "block"}
+
