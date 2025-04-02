@@ -10,6 +10,7 @@ def get_main_page():
         style={'width': '100%', 'overflowX': 'hidden'},  # Ensures no horizontal scroll
         children=[
             dcc.Location(id='url', refresh=False),
+            dcc.Location(id='redirect', refresh=True),
             dbc.Navbar(
                 dbc.Row(  # Use dbc.Row to properly align columns
                     [
