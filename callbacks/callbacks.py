@@ -187,6 +187,7 @@ def get_callbacks(app):
 
     @app.callback(
         dash.dependencies.Output('benchmark-params', 'data'),
+        dash.dependencies.Output('redirect', 'href'),
         [dash.dependencies.Input('url', 'search')]
     )
     def load_benchmark_params(search):
@@ -199,7 +200,12 @@ def get_callbacks(app):
         Returns:
         list: List of available files type.
         """
-        return get_benchmark_params(search)
+        try:
+            benchmark_params = get_benchmark_params(search)
+            return benchmark_params, no_update
+        except Exception as e:
+            print(f"Error fetching benchmark params: {e}")
+            return None, 'https://cascadiaquakes.org/det/'
 
     @app.callback(
         dash.dependencies.Output('file-type-selector', 'options'),
