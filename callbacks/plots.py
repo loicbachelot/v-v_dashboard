@@ -212,12 +212,12 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
         # Global layout updates
         if plot_type == "3d_surface":
             fig.update_layout(
-                title='Surface Plot of x vs y colored by ssha (Regridded Data)',
+                title=f"Surface Plot of x vs y colored by {variable_dict['name']} [{variable_dict['unit']}] (Re gridded Data)",
                 template='plotly_white'
             )
         elif plot_type == "heatmap":
             fig.update_layout(
-                title='Heatmap of x vs y colored by SSHA (Regridded Data)',
+                title=f"Heatmap of x vs y colored by {variable_dict['name']} [{variable_dict['unit']}] (Re gridded Data)",
                 template='plotly_white'
             )
             fig.update_xaxes(matches='x')
