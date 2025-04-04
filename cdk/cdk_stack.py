@@ -350,7 +350,7 @@ def handler(event, context):
         api = apigateway.RestApi(
             self, "FileStatusAPI",
             default_cors_preflight_options={
-                "allow_origins": ["*"],  # Allow all origins temporarily
+                "allow_origins": ["https://det-uploader.cascadiaquakes.org"],
                 "allow_methods": ["GET", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization"]
             }
