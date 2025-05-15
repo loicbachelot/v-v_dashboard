@@ -119,7 +119,7 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
                 f for f in zip_file_list
                 if os.path.basename(f).startswith(prefix) and f.endswith(f".{file_type}")
             ]
-            print(f"number of mathcing files for {prefix} {len(matching_files)}")
+            print(f"number of matching files for {prefix} {len(matching_files)}")
             for file_name in matching_files:
                 # Read and validate file
                 with zip_obj.open(file_name) as file:
@@ -128,14 +128,23 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
 
                     # Validate columns
                     var_list = expected_structure['var_list']
-                    expected_columns = [var['name'] for var in var_list]
-                    if list(df.columns) != expected_columns:
-                        warnings.warn(f"File {os.path.basename(file_name)} does not match the expected structure. Expected columns: {expected_columns}, found columns: {list(df.columns)}")
+                    expected_columns = [var['name'].lower() for var in
+                                        var_list]  # Convert expected columns to lowercase
+                    df_columns_lowercase = [col.lower() for col in df.columns]  # Convert actual columns to lowercase
+
+                    if df_columns_lowercase != expected_columns:
+                        warnings.warn(
+                            f"File {os.path.basename(file_name)} does not match the expected structure. Expected columns: {expected_columns}, found columns: {df_columns_lowercase}")
                         continue
+
+                    # Force DataFrame column names to lowercase
+                    df.columns = df.columns.str.lower()
+
                     if "grid" in expected_structure:
                         df = interpolate_data(df, expected_structure['grid'])
                     # Save as Parquet
-                    output_path = os.path.join(output_folder, f"{os.path.splitext(os.path.basename(file_name))[0]}.parquet")
+                    output_path = os.path.join(output_folder,
+                                               f"{os.path.splitext(os.path.basename(file_name))[0]}.parquet")
                     df.to_parquet(output_path, index=False)
                     # Extract the header from the first .dat file
                     if common_header is None:
