@@ -5,7 +5,7 @@ from callbacks.callbacks import get_callbacks
 from flask_caching import Cache
 from callbacks.utils import set_cache
 
-app = dash.Dash(external_stylesheets=[dbc.themes.CERULEAN])
+app = dash.Dash(external_stylesheets=[dbc.themes.CERULEAN], title="DET code verification platform")
 
 server = app.server
 

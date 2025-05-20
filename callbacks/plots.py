@@ -148,7 +148,8 @@ def main_surface_plot_dynamic_v2(df, old_fig, variable_dict, plot_type="3d_surfa
 
             x_unique = dataset_df['x'].unique()
             y_unique = dataset_df['y'].unique()
-            v_disp_2d = dataset_df[variable_dict['name']].values.reshape((len(x_unique), len(y_unique)))
+            v_disp_2d = dataset_df.pivot(index="y", columns="x", values=variable_dict["name"]).values
+
             if plot_type == "3d_surface":
                 fig.add_trace(go.Surface(
                     x=x_unique,
