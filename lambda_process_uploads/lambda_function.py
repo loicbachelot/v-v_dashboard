@@ -9,6 +9,7 @@ import pandas as pd
 from io import StringIO, BytesIO
 
 from scipy.interpolate import NearestNDInterpolator, griddata
+from sklearn.neighbors import KDTree
 import numpy as np
 from botocore.exceptions import NoCredentialsError, ClientError
 
@@ -49,40 +50,29 @@ def interpolate_data(df, grid_params):
 
     print(grid_params)
 
-    # Create a regular grid
-    x_grid = np.linspace(x_min, x_max, x_n)
-    y_grid = np.linspace(y_min, y_max, y_n)
-    x_mesh, y_mesh = np.meshgrid(x_grid, y_grid)
+    # Build query grid
+    query_points = np.array(np.meshgrid(
+        np.linspace(x_min, x_max, x_n),
+        np.linspace(y_min, y_max, y_n))
+    ).T.reshape(-1, 2)
 
+    # Drop rows with any NaNs across displacement fields
+    tree = KDTree(df[["x", "y"]].values)
+    _, idx = tree.query(query_points, k=1)
+
+    # Interpolate
+    interpolated_data = {}
+
+    # Interpolate all variables values onto the grid
     variables = [col for col in df.columns if col not in ["x", "y"]]
 
-    interpolated_data = {"x": x_mesh.flatten(), "y": y_mesh.flatten()}
-    # Interpolate all variables values onto the grid
     for var in variables:
         print(f"interpolating {var}")
-        var_grid = griddata(
-            (df['x'], df['y']),  # Input points
-            df[var],  # Input values
-            (x_mesh, y_mesh),  # Grid to interpolate onto
-            method='linear'  # Interpolation method ('linear', 'nearest', 'cubic')
-        )
+        interpolated_data[var] = df[var].values[idx.flatten()]
 
-        # Extrapolate missing values using nearest neighbor
-        valid_mask = ~np.isnan(var_grid)  # Mask of valid (non-NaN) values
-        valid_points = np.column_stack((x_mesh[valid_mask], y_mesh[valid_mask]))  # Valid (x, z) points
-        valid_values = var_grid[valid_mask]  # Valid v-disp values
-
-        # Create a nearest neighbor interpolator
-        nearest_interp = NearestNDInterpolator(valid_points, valid_values)
-
-        # Fill missing values by extrapolating
-        var_grid_filled = np.where(
-            np.isnan(var_grid),  # Condition: Where values are NaN
-            nearest_interp(x_mesh, y_mesh),  # Fill with nearest neighbor values
-            var_grid  # Keep original values where not NaN
-        )
-        interpolated_data[var] = var_grid_filled.flatten()
-
+    # store grid coordinates too
+    interpolated_data["x"] = query_points[:, 0]
+    interpolated_data["y"] = query_points[:, 1]
     # Create a new DataFrame
     interpolated_df = pd.DataFrame(interpolated_data)
     return interpolated_df
