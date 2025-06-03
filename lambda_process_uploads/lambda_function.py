@@ -26,19 +26,27 @@ def convert_seconds_to_time(seconds):
     return years, days, hours, seconds
 
 
-def extract_header(content):
-    """Extract and parse the common header from a .dat file."""
+def extract_header(file_header, prefix, content):
+    if file_header is None:
+        file_header = {}
+
     header_data = {}
+
     for line in content.splitlines():
+        line = line.strip()
         if line.startswith("# File:"):
             continue
-        if line.startswith('#'):
+        if line.startswith("#"):
             if '=' in line:
                 key, value = line[2:].strip().split('=', 1)
                 header_data[key.strip()] = value.strip()
             else:
-                header_data.setdefault('comments', []).append(line[2:].strip())
-    return header_data
+                header_data.setdefault("comments", []).append(line[2:].strip())
+        else:
+            break
+
+    file_header[prefix] = header_data
+    return file_header
 
 
 def interpolate_data(df, grid_params):
@@ -83,7 +91,7 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
     os.makedirs(output_folder, exist_ok=True)
 
     file_list = []
-    common_header = None
+    file_header = {}  # Now accumulates header per prefix
 
     # Download and unzip the file
     zip_obj = s3.get_object(Bucket=bucket_name, Key=zip_key)
@@ -114,6 +122,11 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
                 # Read and validate file
                 with zip_obj.open(file_name) as file:
                     file_content = file.read().decode('utf-8')
+
+                    # Only extract header once per prefix (e.g., first matching file)
+                    if prefix not in file_header:
+                        file_header = extract_header(file_header, prefix, file_content)
+
                     df = pd.read_csv(StringIO(file_content), comment='#', sep='\s+')
 
                     # Validate columns
@@ -136,9 +149,6 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
                     output_path = os.path.join(output_folder,
                                                f"{os.path.splitext(os.path.basename(file_name))[0]}.parquet")
                     df.to_parquet(output_path, index=False)
-                    # Extract the header from the first .dat file
-                    if common_header is None:
-                        common_header = extract_header(file_content)
 
                 # Upload the Parquet file to the main bucket with the benchmark_pb structure
                 target_key = f"public_ds/{benchmark_pb}/{code_name}_{version}/{os.path.basename(output_path)}"
@@ -147,7 +157,7 @@ def process_zip(bucket_name, zip_key, benchmark_pb, code_name, version, user_met
                 os.remove(output_path)
 
     # Save metadata as JSON and upload it
-    metadata = {"common_header": common_header, "processed_files": file_list}
+    metadata = {**file_header, "processed_files": file_list}
     metadata_path = os.path.join(output_folder, "metadata.json")
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=4)

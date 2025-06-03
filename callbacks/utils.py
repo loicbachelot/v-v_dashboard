@@ -231,7 +231,13 @@ def get_metadata(benchmark_id, dataset_name):
         return None
 
 
-# Recursive function to render JSON fields dynamically
+def wrap_text(text, max_len=100):
+    """Wrap text at spaces before the max_len, preserving words."""
+    import textwrap
+    return html.Span([
+        html.Span(line + "\n") for line in textwrap.wrap(text, width=max_len)
+    ])
+
 def render_json(data):
     if isinstance(data, dict):
         return html.Ul([
@@ -240,6 +246,8 @@ def render_json(data):
         ])
     elif isinstance(data, list):
         return html.Ul([html.Li(render_json(item)) for item in data])
+    elif isinstance(data, str) and len(data) > 100:
+        return wrap_text(data)
     else:
         return html.Span(str(data))
 
