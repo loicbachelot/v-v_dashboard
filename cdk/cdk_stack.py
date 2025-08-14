@@ -178,15 +178,24 @@ class DashboardStack(Stack):
             repository_name="vv-lambda-upload",
         )
 
-        # Create the DynamoDB table
-        table = dynamodb.Table(
+    
+        # If you want to use an existing table, comment this block and use the `from_table_name` method below.
+        # Uncomment this block if you want to create a new DynamoDB table
+        # table = dynamodb.Table(
+        #     self, "DETFileProcessingStatusTable",
+        #     table_name="DETFileProcessingStatus",
+        #     partition_key=dynamodb.Attribute(name="userId", type=dynamodb.AttributeType.STRING),
+        #     sort_key=dynamodb.Attribute(name="fileId", type=dynamodb.AttributeType.STRING),
+        #     billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+        #     time_to_live_attribute="expiry",
+        # )
+
+        # If you want to use an existing table, use this method
+        table = dynamodb.Table.from_table_name(
             self, "DETFileProcessingStatusTable",
-            table_name="DETFileProcessingStatus",
-            partition_key=dynamodb.Attribute(name="userId", type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(name="fileId", type=dynamodb.AttributeType.STRING),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,  # Cost-effective for low traffic
-            time_to_live_attribute="expiry",  # Optional: Enable TTL for automatic cleanup
+            table_name="DETFileProcessingStatus"
         )
+
         # Grant the Lambda function permissions to read/write to DynamoDB
         table.grant_read_write_data(lambda_role)
 
@@ -369,4 +378,3 @@ def handler(event, context):
             value=api.url,
             description="Endpoint for checking processing status",
         )
-
