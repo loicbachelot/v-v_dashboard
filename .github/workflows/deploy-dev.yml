@@ -1,6 +1,8 @@
 ﻿name: deploy-dev
 
 on:
+  push:
+    branches: [ci/test]
   workflow_dispatch:
     inputs:
       tag:
@@ -81,3 +83,4 @@ jobs:
 
       - name: CDK deploy (dev)
         run: npx cdk@2 deploy --all --require-approval never
+
