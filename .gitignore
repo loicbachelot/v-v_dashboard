@@ -1,0 +1,10 @@
+﻿__pycache__/
+*.py[cod]
+.venv/
+.env
+
+# CDK build output
+cdk.out/
+
+# Local scratch
+dummy.csv
