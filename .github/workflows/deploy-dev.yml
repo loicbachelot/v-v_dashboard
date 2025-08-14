@@ -1,0 +1,87 @@
+﻿name: deploy-dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag to build/push (default = commit SHA)
+        required: false
+        default: ${{ github.sha }}
+
+permissions:
+  contents: read   # we are using long-lived keys from secrets, not OIDC
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CDK deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r cdk/requirements.txt
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get AWS account id
+        id: aws
+        run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_OUTPUT
+
+      - name: Ensure ECR repos exist (idempotent)
+        run: |
+          aws ecr describe-repositories --repository-names v-v_dashboard >/dev/null 2>&1 || aws ecr create-repository --repository-name v-v_dashboard
+          aws ecr describe-repositories --repository-names vv-lambda-upload >/dev/null 2>&1 || aws ecr create-repository --repository-name vv-lambda-upload
+
+      - name: ECR login
+        run: aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${{ steps.aws.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build & push APP image
+      - name: Build & push app image
+        env:
+          TAG: ${{ github.event.inputs.tag || github.sha }}
+          REG: ${{ steps.aws.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+        run: |
+          docker build -t v-v_dashboard:$TAG .
+          docker tag  v-v_dashboard:$TAG $REG/v-v_dashboard:$TAG
+          docker tag  v-v_dashboard:$TAG $REG/v-v_dashboard:2.1.14
+          docker push $REG/v-v_dashboard:$TAG
+          docker push $REG/v-v_dashboard:2.1.14
+
+      # Build & push LAMBDA image (amd64)
+      - name: Build & push lambda image
+        env:
+          TAG: ${{ github.event.inputs.tag || github.sha }}
+          REG: ${{ steps.aws.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+        run: |
+          docker buildx build --platform linux/amd64 -t vv-lambda-upload:$TAG -f lambda_process_uploads/Dockerfile lambda_process_uploads
+          docker tag  vv-lambda-upload:$TAG $REG/vv-lambda-upload:$TAG
+          docker tag  vv-lambda-upload:$TAG $REG/vv-lambda-upload:2.0.16
+          docker push $REG/vv-lambda-upload:$TAG
+          docker push $REG/vv-lambda-upload:2.0.16
+
+      # Bootstrap is safe to rerun; no-op if already done.
+      - name: CDK bootstrap (idempotent)
+        run: npx cdk@2 bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/${{ env.AWS_REGION }} || true
+
+      - name: CDK deploy (dev)
+        run: npx cdk@2 deploy --all --require-approval never
