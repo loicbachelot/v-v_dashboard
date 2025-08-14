@@ -34,9 +34,8 @@ jobs:
       - name: Build app image
         run: docker build -t vv-app:${{ github.sha }} .
       - name: Build lambda image (amd64)
-        run: docker buildx build --platform linux/amd64 \
-             -t vv-lambda:${{ github.sha }} \
-             -f lambda_process_uploads/Dockerfile lambda_process_uploads
+        run: docker buildx build --platform linux/amd64 -t vv-lambda:${{ github.sha }} -f lambda_process_uploads/Dockerfile lambda_process_uploads
+
 
       # Infra synth only (no AWS creds; no changes)
       - name: CDK synth
