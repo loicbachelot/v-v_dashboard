@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Image tag to build/push (optional; defaults to commit SHA)'
+        description: "Image tag to build/push (optional; defaults to commit SHA)"
         required: false
   push:
     branches: [ci/test]
@@ -18,29 +18,33 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # required for OIDC
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install CDK deps
         run: |
           python -m pip install --upgrade pip
           pip install -r cdk/requirements.txt
 
-      - name: Configure AWS credentials
+      # OIDC: assume the deploy role (no long-lived keys)
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::818214664804:role/GitHubActionsDeployRole
           aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gha-deploy
 
       - name: Get AWS account id
         id: aws
@@ -58,7 +62,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      # Build & push the Dash app image (unchanged)
+      # Build & push the Dash app image
       - name: Build & push app image
         env:
           TAG: ${{ inputs.tag || github.sha }}
@@ -70,7 +74,7 @@ jobs:
           docker push "$REG"/v-v_dashboard:"$TAG"
           docker push "$REG"/v-v_dashboard:2.1.14
 
-      # For Lambda: force classic builder (DOCKER_BUILDKIT=0) so manifest is Docker v2, not OCI
+      # For Lambda: force classic builder so manifest is Docker v2 (Lambda-compatible)
       - name: Build & push lambda image (Docker v2 manifest)
         env:
           TAG: ${{ inputs.tag || github.sha }}
@@ -89,3 +93,30 @@ jobs:
 
       - name: CDK deploy (dev)
         run: npx cdk@2 deploy --all --require-approval never
+
+      - name: Smoke test (ALB + APIs)
+        env:
+          STACK: DashboardStack
+        run: |
+          # Grab URLs from CloudFormation outputs
+          ALB=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?contains(OutputKey, 'ServiceURL')].OutputValue" --output text)
+
+          API_BASES=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?contains(OutputKey, 'APIEndpoint')].OutputValue" --output text)
+
+          echo "ALB: $ALB"
+          echo "APIs: $API_BASES"
+
+          # Basic checks (fail fast if any curl errors / non-2xx)
+          set -euo pipefail
+
+          echo "Checking ALB..."
+          curl -fsS --max-time 15 "$ALB" >/dev/null
+
+          echo "Checking API /status routes..."
+          for base in $API_BASES; do
+            curl -fsS --max-time 15 "${base%/}/status" >/dev/null
+          done
+
+          echo "Smoke test passed."
