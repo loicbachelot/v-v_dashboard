@@ -138,6 +138,11 @@ class DashboardStack(Stack):
             task_definition=task_definition,
             public_load_balancer=True,
         )
+        
+        # Create an output for the Load Balancer's DNS name
+        CfnOutput(self, "ServiceURL",
+            value=fargate_service.load_balancer.load_balancer_dns_name
+        )
 
         lambda_role = iam.Role(
             self,
