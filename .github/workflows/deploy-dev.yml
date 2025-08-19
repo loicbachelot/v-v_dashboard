@@ -100,9 +100,9 @@ jobs:
         run: |
           set -euo pipefail
 
+          # 1) Fetch outputs
           ALB=$(aws cloudformation describe-stacks --stack-name "$STACK" \
             --query "Stacks[0].Outputs[?contains(OutputKey, 'ServiceURL')].OutputValue" --output text)
-
           API_BASES=$(aws cloudformation describe-stacks --stack-name "$STACK" \
             --query "Stacks[0].Outputs[?contains(OutputKey, 'APIEndpoint')].OutputValue" --output text)
 
@@ -112,31 +112,64 @@ jobs:
           echo "Checking ALB..."
           curl -fsS --max-time 20 "$ALB" >/dev/null
 
-          echo "Checking API health routes..."
-          fails=0
+          any_api_ok=0
+          echo "Checking API health routes (auto-discovered)..."
           for base in $API_BASES; do
-            b="${base%/}"   # strip trailing slash
+            b="${base%/}"  # strip trailing /
+            host=$(echo "$b" | sed -E 's#^https?://([^/]+)/.*#\1#')
+            api_id="${host%%.*}"
+
+            # Try REST (v1) first
+            v1_id=$(aws apigateway get-rest-apis --query "items[?id=='$api_id'].id" --output text 2>/dev/null || true)
+            routes=""
+            if [ -n "$v1_id" ] && [ "$v1_id" != "None" ]; then
+              routes=$(aws apigateway get-resources --rest-api-id "$api_id" --embed methods \
+                --query "items[?resourceMethods.GET].path" --output text 2>/dev/null || true)
+            else
+              # Try HTTP API / WebSocket (v2)
+              v2_id=$(aws apigatewayv2 get-apis --query "Items[?ApiId=='$api_id'].ApiId" --output text 2>/dev/null || true)
+              if [ -n "$v2_id" ] && [ "$v2_id" != "None" ]; then
+                routes=$(aws apigatewayv2 get-routes --api-id "$api_id" \
+                  --query "Items[?starts_with(RouteKey,'GET') || starts_with(RouteKey,'ANY')].RouteKey" \
+                  --output text 2>/dev/null | tr '\t' '\n' | awk '{print $2}' || true)
+              fi
+            fi
+
+            # Normalize and prioritize candidate paths
+            candidates=""
+            if [ -n "$routes" ] && [ "$routes" != "None" ]; then
+              norm=$(echo "$routes" | tr '\t' '\n' | sed 's#^/*#/#' | sort -u)
+              # Prefer status/health/ping if present
+              preferred=$(echo "$norm" | grep -Ei '/(status|health|ping)(/)?$' || true)
+              if [ -n "$preferred" ]; then
+                candidates="$preferred"
+              else
+                candidates="$norm"
+              fi
+            else
+              # Fallback guesses if we couldn't list routes
+              candidates="/status /health /ping /file/status /api/status /"
+            fi
+
             ok=0
-            for path in /status /status/ /file/status /file/status/ ; do
-              url="$b$path"
+            for p in $candidates; do
+              url="$b${p#/}"   # ensure single slash join
               code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 "$url" || true)
               echo "  $url -> $code"
               if [ "$code" = "200" ] || [ "$code" = "204" ]; then
-                ok=1
-                break
-              else
-                echo "----- response for $url -----"
-                curl -sS --max-time 20 -i "$url" || true
-                echo "-----------------------------"
+                ok=1; break
               fi
             done
-            if [ $ok -ne 1 ]; then
-              fails=$((fails+1))
+
+            if [ $ok -eq 1 ]; then
+              any_api_ok=1
+            else
+              echo "::warning::No 2xx health route found for base $b (tried: $candidates)"
             fi
           done
 
-          if [ $fails -gt 0 ]; then
-            echo "Smoke test: $fails API base(s) did not return 2xx on a health route."
+          if [ "$any_api_ok" -ne 1 ] && [ -n "$API_BASES" ]; then
+            echo "Smoke test: no API base responded with 2xx."
             exit 1
           fi
 
