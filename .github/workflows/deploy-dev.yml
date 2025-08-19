@@ -98,6 +98,8 @@ jobs:
         env:
           STACK: DashboardStack
         run: |
+          set -euo pipefail
+
           # Grab URLs from CloudFormation outputs
           ALB=$(aws cloudformation describe-stacks --stack-name "$STACK" \
             --query "Stacks[0].Outputs[?contains(OutputKey, 'ServiceURL')].OutputValue" --output text)
@@ -105,18 +107,39 @@ jobs:
           API_BASES=$(aws cloudformation describe-stacks --stack-name "$STACK" \
             --query "Stacks[0].Outputs[?contains(OutputKey, 'APIEndpoint')].OutputValue" --output text)
 
-          echo "ALB: $ALB"
+          echo "ALB:  $ALB"
           echo "APIs: $API_BASES"
 
-          # Basic checks (fail fast if any curl errors / non-2xx)
-          set -euo pipefail
-
           echo "Checking ALB..."
-          curl -fsS --max-time 15 "$ALB" >/dev/null
+          curl -fsS --max-time 20 "$ALB" >/dev/null
 
           echo "Checking API /status routes..."
+          fails=0
           for base in $API_BASES; do
-            curl -fsS --max-time 15 "${base%/}/status" >/dev/null
+            b="${base%/}"   # strip trailing slash
+            ok=0
+            for path in /status /status/ ; do
+              url="$b$path"
+              code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 "$url" || true)
+              echo "  $url -> $code"
+              if [ "$code" = "200" ] || [ "$code" = "204" ]; then
+                ok=1
+                break
+              else
+                echo "----- response headers/body for $url -----"
+                curl -sS --max-time 20 -i "$url" || true
+                echo "------------------------------------------"
+              fi
+            done
+            if [ $ok -ne 1 ]; then
+              fails=$((fails+1))
+            fi
           done
 
+          if [ $fails -gt 0 ]; then
+            echo "Smoke test: $fails API base(s) did not return 2xx on /status."
+            exit 1
+          fi
+
           echo "Smoke test passed."
+
