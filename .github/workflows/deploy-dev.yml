@@ -108,6 +108,10 @@ jobs:
           echo "--- Checking API Health Endpoint ---"
           API_HEALTH_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" \
             --query "Stacks[0].Outputs[?OutputKey=='StatusAPIEndpoint'].OutputValue" --output text)
-          curl -fsS --max-time 20 "$API_HEALTH_URL"
+
+          # addingg dummy query parameters to the URL for the test
+          TEST_URL="${API_HEALTH_URL}?userId=smoke-test&fileId=smoke-test"
+          echo "Testing URL: $TEST_URL"
+          curl -fsS --max-time 20 "$TEST_URL"
 
           echo "Smoke test passed."
