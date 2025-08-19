@@ -1,12 +1,3 @@
-Of course. Here is the complete and final version of your `lambda_status_check/handler.py` file, rewritten with professional, production-quality comments and a docstring explaining its function.
-
-You can confidently replace your existing file with this code.
-
------
-
-## Final `handler.py` with Professional Comments
-
-```python
 import os
 import json
 import boto3
@@ -111,4 +102,3 @@ def lambda_handler(event, context):
             'headers': cors_headers,
             'body': json.dumps({'error': 'An internal server error occurred.'})
         }
-```
