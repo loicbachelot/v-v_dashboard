@@ -379,7 +379,7 @@ def handler(event, context):
 
         # Output the API endpoint URL for reference
         CfnOutput(
-            self, "StatusAPIEndpoint",
+            self, "StatusAPIHealthURL", # <-- renamed forr clarity
             value=f"{api.url}status",
             description="Endpoint for checking processing status",
         )

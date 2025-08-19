@@ -100,18 +100,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "--- Checking ALB ---"
           ALB_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" \
             --query "Stacks[0].Outputs[?OutputKey=='ServiceURL'].OutputValue" --output text)
-          curl -fsS --max-time 20 "$ALB_URL"
 
-          echo "--- Checking API Health Endpoint ---"
           API_HEALTH_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" \
-            --query "Stacks[0].Outputs[?OutputKey=='StatusAPIEndpoint'].OutputValue" --output text)
+            --query "Stacks[0].Outputs[?OutputKey=='StatusAPIHealthURL'].OutputValue" --output text)
 
-          # addingg dummy query parameters to the URL for the test
-          TEST_URL="${API_HEALTH_URL}?userId=smoke-test&fileId=smoke-test"
-          echo "Testing URL: $TEST_URL"
-          curl -fsS --max-time 20 "$TEST_URL"
+          echo "ALB:  $ALB_URL"
+          echo "API:  $API_HEALTH_URL"
+
+          echo "Checking ALB..."
+          curl -fsS --max-time 20 "$ALB_URL" >/dev/null
+
+          echo "Checking API health..."
+          curl -fsS --max-time 20 "$API_HEALTH_URL" >/dev/null
 
           echo "Smoke test passed."
