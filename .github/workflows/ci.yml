@@ -1,41 +1,64 @@
 ﻿name: ci
+
 on:
   pull_request:
     branches: [main]
+  # Optional: also run CI when we push to our dev branch
+  push:
+    branches: [ci/test]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-and-synth:
+  build-test-synth:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
     steps:
       - uses: actions/checkout@v4
 
-      # npx cdk requires Node
+      # Node is needed for npx cdk
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # CDK (Python) dependencies
+      # Python for CDK (python app) + lint/tests; enable pip cache
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install CDK deps
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            cdk/requirements.txt
+
+      # Tooling & deps (ok if requirements.txt doesn't exist)
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
           pip install -r cdk/requirements.txt
+          pip install ruff pytest
+
+      # Lint (fast)
+      - name: Ruff (lint)
+        run: ruff check .
+
+      # Tests (only if tests/ exists)
+      - name: Pytest
+        if: ${{ hashFiles('tests/**') != '' }}
+        run: pytest -q
 
       # Build images to catch Docker issues (no push)
       - uses: docker/setup-buildx-action@v3
+
       - name: Build app image
         run: docker build -t vv-app:${{ github.sha }} .
+
       - name: Build lambda image (amd64)
         run: docker buildx build --platform linux/amd64 -t vv-lambda:${{ github.sha }} -f lambda_process_uploads/Dockerfile lambda_process_uploads
-
 
       # Infra synth only (no AWS creds; no changes)
       - name: CDK synth
@@ -46,4 +69,3 @@ jobs:
         with:
           name: cdk.out
           path: cdk.out
-

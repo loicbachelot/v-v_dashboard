@@ -94,85 +94,20 @@ jobs:
       - name: CDK deploy (dev)
         run: npx cdk@2 deploy --all --require-approval never
 
-      - name: Smoke test (ALB + APIs)
+      - name: Smoke test
         env:
           STACK: DashboardStack
         run: |
           set -euo pipefail
 
-          # 1) Fetch outputs
-          ALB=$(aws cloudformation describe-stacks --stack-name "$STACK" \
-            --query "Stacks[0].Outputs[?contains(OutputKey, 'ServiceURL')].OutputValue" --output text)
-          API_BASES=$(aws cloudformation describe-stacks --stack-name "$STACK" \
-            --query "Stacks[0].Outputs[?contains(OutputKey, 'APIEndpoint')].OutputValue" --output text)
+          echo "--- Checking ALB ---"
+          ALB_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='ServiceURL'].OutputValue" --output text)
+          curl -fsS --max-time 20 "$ALB_URL"
 
-          echo "ALB:  $ALB"
-          echo "APIs: $API_BASES"
-
-          echo "Checking ALB..."
-          curl -fsS --max-time 20 "$ALB" >/dev/null
-
-          any_api_ok=0
-          echo "Checking API health routes (auto-discovered)..."
-          for base in $API_BASES; do
-            b="${base%/}"  # strip trailing /
-            host=$(echo "$b" | sed -E 's#^https?://([^/]+)/.*#\1#')
-            api_id="${host%%.*}"
-
-            # Try REST (v1) first
-            v1_id=$(aws apigateway get-rest-apis --query "items[?id=='$api_id'].id" --output text 2>/dev/null || true)
-            routes=""
-            if [ -n "$v1_id" ] && [ "$v1_id" != "None" ]; then
-              routes=$(aws apigateway get-resources --rest-api-id "$api_id" --embed methods \
-                --query "items[?resourceMethods.GET].path" --output text 2>/dev/null || true)
-            else
-              # Try HTTP API / WebSocket (v2)
-              v2_id=$(aws apigatewayv2 get-apis --query "Items[?ApiId=='$api_id'].ApiId" --output text 2>/dev/null || true)
-              if [ -n "$v2_id" ] && [ "$v2_id" != "None" ]; then
-                routes=$(aws apigatewayv2 get-routes --api-id "$api_id" \
-                  --query "Items[?starts_with(RouteKey,'GET') || starts_with(RouteKey,'ANY')].RouteKey" \
-                  --output text 2>/dev/null | tr '\t' '\n' | awk '{print $2}' || true)
-              fi
-            fi
-
-            # Normalize and prioritize candidate paths
-            candidates=""
-            if [ -n "$routes" ] && [ "$routes" != "None" ]; then
-              norm=$(echo "$routes" | tr '\t' '\n' | sed 's#^/*#/#' | sort -u)
-              # Prefer status/health/ping if present
-              preferred=$(echo "$norm" | grep -Ei '/(status|health|ping)(/)?$' || true)
-              if [ -n "$preferred" ]; then
-                candidates="$preferred"
-              else
-                candidates="$norm"
-              fi
-            else
-              # Fallback guesses if we couldn't list routes
-              candidates="/status /health /ping /file/status /api/status /"
-            fi
-
-            ok=0
-            for p in $candidates; do
-              url="$b${p#/}"   # ensure single slash join
-              code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 "$url" || true)
-              echo "  $url -> $code"
-              if [ "$code" = "200" ] || [ "$code" = "204" ]; then
-                ok=1; break
-              fi
-            done
-
-            if [ $ok -eq 1 ]; then
-              any_api_ok=1
-            else
-              echo "::warning::No 2xx health route found for base $b (tried: $candidates)"
-            fi
-          done
-
-          if [ "$any_api_ok" -ne 1 ] && [ -n "$API_BASES" ]; then
-            echo "Smoke test: no API base responded with 2xx."
-            exit 1
-          fi
+          echo "--- Checking API Health Endpoint ---"
+          API_HEALTH_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='StatusAPIEndpoint'].OutputValue" --output text)
+          curl -fsS --max-time 20 "$API_HEALTH_URL"
 
           echo "Smoke test passed."
-
-

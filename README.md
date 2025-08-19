@@ -157,3 +157,4 @@ It **does not** delete:
 
 
 ## Acknowledgments
+CRESCENT is funded by NSF cooperative agreement #2225286 and is also supported by thePacific Gas and Electric Company (PG&E).

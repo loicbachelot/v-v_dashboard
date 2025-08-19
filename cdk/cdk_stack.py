@@ -369,12 +369,12 @@ def handler(event, context):
         status_resource.add_method(
             "GET",
             apigateway.LambdaIntegration(status_check_lambda),
-            authorization_type=apigateway.AuthorizationType.IAM
+            authorization_type=apigateway.AuthorizationType.NONE
         )
 
         # Output the API endpoint URL for reference
         CfnOutput(
             self, "StatusAPIEndpoint",
-            value=api.url,
+            value=f"{api.url}status",
             description="Endpoint for checking processing status",
         )

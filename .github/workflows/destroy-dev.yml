@@ -5,14 +5,20 @@ on:
 
 permissions:
   contents: read
-  id-token: write   # we need thhis for OIDC
+  id-token: write  # required for OIDC
 
 env:
   AWS_REGION: us-east-2
 
+concurrency:
+  group: dev-stack
+  cancel-in-progress: false
+
 jobs:
   destroy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
 
@@ -36,5 +42,5 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: gha-destroy
 
-      - name: Destroy CDK stacks (dev)
+      - name: CDK destroy (dev)
         run: npx cdk@2 destroy --all --force
