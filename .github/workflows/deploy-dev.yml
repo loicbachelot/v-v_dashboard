@@ -1,0 +1,118 @@
+﻿name: deploy-dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to build/push (optional; defaults to commit SHA)"
+        required: false
+  push:
+    branches: [ci/test]
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # required for OIDC
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CDK deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r cdk/requirements.txt
+
+      # OIDC: assume the deploy role (no long-lived keys)
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::818214664804:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gha-deploy
+
+      - name: Get AWS account id
+        id: aws
+        run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure ECR repos exist (idempotent)
+        run: |
+          aws ecr describe-repositories --repository-names v-v_dashboard >/dev/null 2>&1 || aws ecr create-repository --repository-name v-v_dashboard
+          aws ecr describe-repositories --repository-names vv-lambda-upload >/dev/null 2>&1 || aws ecr create-repository --repository-name vv-lambda-upload
+
+      - name: ECR login
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" \
+          | docker login --username AWS --password-stdin ${{ steps.aws.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build & push the Dash app image
+      - name: Build & push app image
+        env:
+          TAG: ${{ inputs.tag || github.sha }}
+          REG: ${{ steps.aws.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+        run: |
+          docker build -t v-v_dashboard:"$TAG" .
+          docker tag  v-v_dashboard:"$TAG" "$REG"/v-v_dashboard:"$TAG"
+          docker tag  v-v_dashboard:"$TAG" "$REG"/v-v_dashboard:2.1.14
+          docker push "$REG"/v-v_dashboard:"$TAG"
+          docker push "$REG"/v-v_dashboard:2.1.14
+
+      # For Lambda: force classic builder so manifest is Docker v2 (Lambda-compatible)
+      - name: Build & push lambda image (Docker v2 manifest)
+        env:
+          TAG: ${{ inputs.tag || github.sha }}
+          REG: ${{ steps.aws.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          DOCKER_BUILDKIT: 0
+        run: |
+          docker build -t vv-lambda-upload:"$TAG" -f lambda_process_uploads/Dockerfile lambda_process_uploads
+          docker tag  vv-lambda-upload:"$TAG" "$REG"/vv-lambda-upload:"$TAG"
+          docker tag  vv-lambda-upload:"$TAG" "$REG"/vv-lambda-upload:2.0.17
+          docker push "$REG"/vv-lambda-upload:"$TAG"
+          docker push "$REG"/vv-lambda-upload:2.0.17
+
+      - name: CDK bootstrap (idempotent)
+        run: |
+          npx cdk@2 bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/${AWS_REGION} || true
+
+      - name: CDK deploy (dev)
+        run: npx cdk@2 deploy --all --require-approval never
+
+      - name: Smoke test
+        env:
+          STACK: DashboardStack
+        run: |
+          set -euo pipefail
+
+          ALB_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='ServiceURL'].OutputValue" --output text)
+
+          API_HEALTH_URL=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='StatusAPIHealthURL'].OutputValue" --output text)
+
+          echo "ALB:  $ALB_URL"
+          echo "API:  $API_HEALTH_URL"
+
+          echo "Checking ALB..."
+          curl -fsS --max-time 20 "$ALB_URL" >/dev/null
+
+          echo "Checking API health..."
+          curl -fsS --max-time 20 "$API_HEALTH_URL" >/dev/null
+
+          echo "Smoke test passed."

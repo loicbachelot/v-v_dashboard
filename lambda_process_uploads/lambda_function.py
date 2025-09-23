@@ -8,7 +8,6 @@ import boto3
 import pandas as pd
 from io import StringIO, BytesIO
 
-from scipy.interpolate import NearestNDInterpolator, griddata
 from sklearn.neighbors import KDTree
 import numpy as np
 from botocore.exceptions import NoCredentialsError, ClientError
@@ -43,7 +42,7 @@ def extract_header(content):
 
 def interpolate_data(df, grid_params):
     """Apply interpolation for all variables in the dataframe."""
-    print(f"Applying interpolation")
+    print("Applying interpolation")
 
     x_min, x_max, x_n = grid_params["x"]["min"], grid_params["x"]["max"], grid_params["x"]["n"]
     y_min, y_max, y_n = grid_params["y"]["min"], grid_params["y"]["max"], grid_params["y"]["n"]

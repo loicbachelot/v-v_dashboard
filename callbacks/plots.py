@@ -1,4 +1,3 @@
-from mpl_toolkits.axes_grid1.axes_divider import make_axes_area_auto_adjustable
 
 from callbacks.utils import generate_color_mapping
 from plotly.subplots import make_subplots
@@ -269,7 +268,7 @@ def cross_section_plots(df, variable_dict, slider=0):
         # Customize layout
         fig.update_layout(
             title=f"Cross section of {variable_dict['name']} at y={slider}m",
-            xaxis_title=f"x (m)",
+            xaxis_title="x (m)",
             yaxis_title=f"{variable_dict['name']} ({variable_dict['unit']})",
             legend_title="Dataset Name",
             template="plotly_white"

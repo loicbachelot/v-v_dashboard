@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from callbacks.plots import main_time_plot_dynamic, main_surface_plot_dynamic_v2, cross_section_plots
 from callbacks.utils import get_df, get_upload_df, fetch_group_names_for_benchmark, get_metadata, get_benchmark_params, \
     get_plots_from_json
-from dash import html, ctx, no_update
+from dash import ctx, no_update
 
 
 def get_callbacks(app):
