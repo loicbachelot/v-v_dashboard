@@ -1,13 +1,11 @@
 from aws_cdk import (
     Stack,
-    RemovalPolicy,
     aws_ec2 as ec2,
     aws_ecr as ecr,
     aws_iam as iam,
     aws_ecs as ecs,
     aws_ecs_patterns as ecs_patterns,
     aws_s3 as s3,
-    aws_s3_notifications as s3_notifications,
     aws_lambda as _lambda, Duration,
     aws_dynamodb as dynamodb,
     aws_stepfunctions as sfn,
@@ -138,6 +136,11 @@ class DashboardStack(Stack):
             task_definition=task_definition,
             public_load_balancer=True,
         )
+        
+        # Create an output for the Load Balancer's DNS name
+        CfnOutput(self, "ServiceURL",
+            value=fargate_service.load_balancer.load_balancer_dns_name
+        )
 
         lambda_role = iam.Role(
             self,
@@ -178,15 +181,24 @@ class DashboardStack(Stack):
             repository_name="vv-lambda-upload",
         )
 
-        # Create the DynamoDB table
-        table = dynamodb.Table(
+    
+        # If you want to use an existing table, comment this block and use the `from_table_name` method below.
+        # Uncomment this block if you want to create a new DynamoDB table
+        # table = dynamodb.Table(
+        #     self, "DETFileProcessingStatusTable",
+        #     table_name="DETFileProcessingStatus",
+        #     partition_key=dynamodb.Attribute(name="userId", type=dynamodb.AttributeType.STRING),
+        #     sort_key=dynamodb.Attribute(name="fileId", type=dynamodb.AttributeType.STRING),
+        #     billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+        #     time_to_live_attribute="expiry",
+        # )
+
+        # If you want to use an existing table, use this method
+        table = dynamodb.Table.from_table_name(
             self, "DETFileProcessingStatusTable",
-            table_name="DETFileProcessingStatus",
-            partition_key=dynamodb.Attribute(name="userId", type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(name="fileId", type=dynamodb.AttributeType.STRING),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,  # Cost-effective for low traffic
-            time_to_live_attribute="expiry",  # Optional: Enable TTL for automatic cleanup
+            table_name="DETFileProcessingStatus"
         )
+
         # Grant the Lambda function permissions to read/write to DynamoDB
         table.grant_read_write_data(lambda_role)
 
@@ -360,13 +372,12 @@ def handler(event, context):
         status_resource.add_method(
             "GET",
             apigateway.LambdaIntegration(status_check_lambda),
-            authorization_type=apigateway.AuthorizationType.IAM
+            authorization_type=apigateway.AuthorizationType.NONE
         )
 
         # Output the API endpoint URL for reference
         CfnOutput(
-            self, "StatusAPIEndpoint",
-            value=api.url,
+            self, "StatusAPIHealthURL", # <-- renamed forr clarity
+            value=f"{api.url}status",
             description="Endpoint for checking processing status",
         )
-
