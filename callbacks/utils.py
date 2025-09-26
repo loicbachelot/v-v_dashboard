@@ -81,18 +81,25 @@ def convert_seconds_to_time(seconds):
 
 def fetch_group_names_for_benchmark(benchmark_id):
     try:
-        bucket_name = 'benchmark-vv-data'
-        # List all objects with the prefix matching the benchmark ID
-        response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                             Prefix=f"public_ds/{parse_benchmark_id(benchmark_id)}/")
-        # Use a set to store unique group names
-        group_names = set()
-        if 'Contents' in response:
-            for obj in response['Contents']:
-                parts = obj['Key'].split('/')
-                if len(parts[2]) > 1:  # Ensure it's a valid path with group name
-                    group_names.add(parts[2])  # Add group name to the set
-        result = sorted(list(group_names))
+        bucket_name = "benchmark-vv-data"
+        prefix = f"public_ds/{parse_benchmark_id(benchmark_id)}/"
+
+        print(f"getting data for benchmark {benchmark_id}")
+
+        response = s3_client.list_objects_v2(
+            Bucket=bucket_name,
+            Prefix=prefix,
+            Delimiter="/"  # <- this groups by folder
+        )
+
+        group_names = []
+        if "CommonPrefixes" in response:
+            for cp in response["CommonPrefixes"]:
+                # strip the prefix part, keep only the folder name
+                folder = cp["Prefix"].split("/")[-2]
+                group_names.append(folder)
+
+        result = sorted(group_names)
 
     except Exception as e:
         print(f"Error fetching datasets: {e}")
