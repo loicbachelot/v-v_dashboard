@@ -160,12 +160,12 @@
         {
           "name": "pprime",
           "unit": "Pa",
-          "description": "pressure"
+          "description": "pressure (Eulerian)"
         },
         {
           "name": "dp",
           "unit": "Pa",
-          "description": "pressure"
+          "description": "pressure (Lagrangian)"
         }
       ],
       "prefix": "ac_sf_body",
@@ -250,12 +250,12 @@
         {
           "name": "pprime",
           "unit": "Pa",
-          "description": "pressure"
+          "description": "pressure (Eulerian)"
         },
         {
           "name": "dp",
           "unit": "Pa",
-          "description": "pressure"
+          "description": "pressure (Lagrangian)"
         }
       ],
       "prefix": "ac_ss_body",

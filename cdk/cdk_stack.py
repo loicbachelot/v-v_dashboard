@@ -123,7 +123,7 @@ class DashboardStack(Stack):
         # Add a container to the task definition
         container = task_definition.add_container(
             "DashboardContainer",
-            image=ecs.ContainerImage.from_ecr_repository(repository, "2.1.14"),
+            image=ecs.ContainerImage.from_ecr_repository(repository, "2.1.15"),
             logging=ecs.LogDrivers.aws_logs(stream_prefix="DashboardApp"),
         )
         container.add_port_mappings(ecs.PortMapping(container_port=8050))

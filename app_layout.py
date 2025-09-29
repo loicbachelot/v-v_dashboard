@@ -142,7 +142,7 @@ def get_main_page():
                                                                 [
                                                                     dbc.ModalHeader(
                                                                         dbc.ModalTitle("File Metadata")),
-                                                                    dbc.ModalBody(html.Pre(id='popup-content')),
+                                                                    dbc.ModalBody(html.Pre(id='popup-content', style={"maxHeight": "70vh", "overflowY": "auto"})),
                                                                     # JSON content display
                                                                     dbc.ModalFooter(
                                                                         dbc.Button("Close", id="close-popup",
@@ -152,6 +152,7 @@ def get_main_page():
                                                                 ],
                                                                 id="popup-modal",
                                                                 is_open=False,
+                                                                size="xl",
                                                             ), ])
                                                     ]
                                                     )
