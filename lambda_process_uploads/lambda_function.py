@@ -48,40 +48,100 @@ def extract_header(file_header, prefix, content):
     return file_header
 
 
-def interpolate_data(df, grid_params):
-    """Apply interpolation for all variables in the dataframe."""
-    print("Applying interpolation")
+def interpolate_data(df, grid_params, k=3, power=1.0, average_duplicates=True):
+    """Regrid all numeric variables in df using k-NN inverse distance weighting (IDW).
 
+    Parameters
+    ----------
+    df : DataFrame
+        Must contain 'x' and 'y' columns and any number of numeric variables to interpolate.
+    grid_params : dict
+        {
+          "x": {"min": ..., "max": ..., "n": ...},
+          "y": {"min": ..., "max": ..., "n": ...}
+        }
+    k : int
+        Number of neighbors for weighting.
+    power : float
+        IDW power parameter. Set to 0 for uniform averaging of neighbors.
+    average_duplicates : bool
+        If True, average duplicate (x,y) rows before building the tree.
+    """
+    print("Applying interpolation with IDW (k={}, power={})".format(k, power))
     x_min, x_max, x_n = grid_params["x"]["min"], grid_params["x"]["max"], grid_params["x"]["n"]
     y_min, y_max, y_n = grid_params["y"]["min"], grid_params["y"]["max"], grid_params["y"]["n"]
-
     print(grid_params)
 
+    # Average duplicate (x,y) points
+    if average_duplicates:
+        # only average numeric columns; non-numerics are dropped
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        if "x" not in numeric_cols: numeric_cols.append("x")
+        if "y" not in numeric_cols: numeric_cols.append("y")
+        dfu = (df[numeric_cols]
+               .groupby(["x", "y"], as_index=False)
+               .mean(numeric_only=True))
+    else:
+        dfu = df.copy()
+
     # Build query grid
-    query_points = np.array(np.meshgrid(
-        np.linspace(x_min, x_max, x_n),
-        np.linspace(y_min, y_max, y_n))
-    ).T.reshape(-1, 2)
+    xi = np.linspace(x_min, x_max, x_n)
+    yi = np.linspace(y_min, y_max, y_n)
+    X, Y = np.meshgrid(xi, yi, indexing="xy")
+    grid_points = np.column_stack([X.ravel(), Y.ravel()])
 
-    # Drop rows with any NaNs across displacement fields
-    tree = KDTree(df[["x", "y"]].values)
-    _, idx = tree.query(query_points, k=1)
+    # KDTree on unique points
+    pts = dfu[["x", "y"]].to_numpy()
+    n_pts = len(pts)
+    if n_pts == 0:
+        raise ValueError("No input points to interpolate.")
 
-    # Interpolate
-    interpolated_data = {}
+    k_eff = min(k, n_pts)  # in case dataset smaller than k
+    tree = KDTree(pts)
+    dist, ind = tree.query(grid_points, k=k_eff)
 
-    # Interpolate all variables values onto the grid
-    variables = [col for col in df.columns if col not in ["x", "y"]]
+    # Prepare variables to interpolate (numeric, excluding x,y)
+    all_numeric = dfu.select_dtypes(include=[np.number]).columns.tolist()
+    variables = [c for c in all_numeric if c not in ("x", "y")]
+    if not variables:
+        raise ValueError("No numeric variables (besides x,y) found to interpolate.")
 
+        # Compute weights (IDW or uniform if power==0)
+    if power == 0:
+        # uniform weights across k neighbors
+        weights = np.full_like(dist, 1.0 / dist.shape[1], dtype=float)
+    else:
+        # IDW weights; handle exact matches by setting that weight to 1
+        with np.errstate(divide='ignore'):
+            w = 1.0 / (np.power(dist, power) + 1e-12)
+        # If any distance is effectively zero for a row, make that neighbor carry full weight
+        zero_rows = np.any(dist < 1e-12, axis=1)
+        if np.any(zero_rows):
+            # For rows with zeros, zero all weights then set zeros to 1 (if multiple zeros, they’ll share equally)
+            w[zero_rows] = 0.0
+            zero_mask = dist[zero_rows] < 1e-12
+            # Normalize per-row among the zero-distance neighbors (could be >1 if duplicates landed exactly on grid)
+            w[zero_rows] = zero_mask / zero_mask.sum(axis=1, keepdims=True)
+        # Normalize remaining rows
+        row_sums = w.sum(axis=1, keepdims=True)
+        # Safeguard in case of any weird numerical issue
+        row_sums[row_sums == 0] = 1.0
+        weights = w / row_sums
+
+    # Interpolate each variable with the weights
+    out = {}
     for var in variables:
-        print(f"interpolating {var}")
-        interpolated_data[var] = df[var].values[idx.flatten()]
+        print(f"Interpolating {var} (k={k_eff}, power={power})")
+        vals = dfu[var].to_numpy()
+        # Gather neighbor values for each grid point and apply weights
+        neigh_vals = vals[ind]  # shape (n_grid, k_eff)
+        out[var] = np.sum(weights * neigh_vals, axis=1)
 
-    # store grid coordinates too
-    interpolated_data["x"] = query_points[:, 0]
-    interpolated_data["y"] = query_points[:, 1]
-    # Create a new DataFrame
-    interpolated_df = pd.DataFrame(interpolated_data)
+    # Return flat DataFrame like your original (x,y alongside all variables)
+    out["x"] = grid_points[:, 0]
+    out["y"] = grid_points[:, 1]
+    interpolated_df = pd.DataFrame(out)
+
     return interpolated_df
 
 
