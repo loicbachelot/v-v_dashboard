@@ -1,15 +1,30 @@
 #!/usr/bin/env python3
+import os
 import aws_cdk as cdk
 from cdk_stack import DashboardStack
 
 app = cdk.App()
 
-# Prod/dev stack (normal behavior; endpoints toggle can also be set via -c includeEcsControlEndpoints=true/false)
-DashboardStack(app, "DashboardStack")
+# dynamic image tags from CI (context first, then env)
+app_tag = app.node.try_get_context("appTag") or os.getenv("APP_IMAGE_TAG")
+lambda_tag = app.node.try_get_context("lambdaTag") or os.getenv("LAMBDA_IMAGE_TAG")
 
-# Optional test stack to validate cost changes (ECS ctrl-plane endpoints disabled)
-# Not deployed unless we target it explicitly:
-#   npx cdk@2 deploy DashboardStackTest -c includeEcsControlEndpoints=false --require-approval never
-DashboardStack(app, "DashboardStackTest", include_ecs_control_endpoints=False)
+# --- Main stack (current prod/dev behavior) ---
+DashboardStack(
+    app,
+    "DashboardStack",
+    include_ecs_private_endpoints=True,   # here we keep ECS/ECR control-plane endpoints
+    app_image_tag=app_tag,
+    lambda_image_tag=lambda_tag,
+)
+
+# --- Test stack: endpoints OFF (use public IP on tasks; no NAT/endpoints needed) ---
+DashboardStack(
+    app,
+    "DashboardStackTest",
+    include_ecs_private_endpoints=False,  # remove ECS/ECR control-plane endpoints
+    app_image_tag=app_tag,
+    lambda_image_tag=lambda_tag,
+)
 
 app.synth()
