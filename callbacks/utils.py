@@ -53,9 +53,9 @@ def parse_benchmark_id(search):
     return query_params.get('benchmark_id', [''])[0]  # Return first value or empty string
 
 
-@memoize(timeout=3600)  # Cache for 1h
-def get_s3_dataset(bucket_name, s3_key):
-    """Fetch a single S3 object and return a DataFrame."""
+@memoize(timeout=3600)
+def _get_s3_dataset_cached(bucket_name, s3_key, object_revision):
+    """Fetch an S3 object, cached for a specific S3 revision."""
     try:
         df = wr.s3.read_parquet(f"s3://{bucket_name}/{s3_key}")
         return df
@@ -63,6 +63,24 @@ def get_s3_dataset(bucket_name, s3_key):
     except Exception as e:  # noqa: BLE001 - callers use None for any unreadable dataset
         print(f"Error fetching {s3_key}: {e}")
         return None
+
+
+def get_s3_dataset(bucket_name, s3_key):
+    """Fetch one S3 object, invalidating the cache when that object changes."""
+    try:
+        metadata = s3_client.head_object(Bucket=bucket_name, Key=s3_key)
+        last_modified = metadata["LastModified"].isoformat()
+        object_revision = (
+            metadata.get("VersionId"),
+            metadata.get("ETag"),
+            last_modified,
+            metadata.get("ContentLength"),
+        )
+    except Exception as e:  # noqa: BLE001 - callers use None for any unreadable dataset
+        print(f"Error checking {s3_key}: {e}")
+        return None
+
+    return _get_s3_dataset_cached(bucket_name, s3_key, object_revision)
 
 
 def convert_seconds_to_time(seconds):
@@ -81,7 +99,6 @@ def convert_seconds_to_time(seconds):
     return years, days, hours, seconds
 
 
-@memoize(timeout=3600)
 def fetch_group_names_for_benchmark(benchmark_id):
     try:
         bucket_name = "benchmark-vv-data"
@@ -89,15 +106,12 @@ def fetch_group_names_for_benchmark(benchmark_id):
 
         print(f"getting data for benchmark {benchmark_id}")
 
-        response = s3_client.list_objects_v2(
-            Bucket=bucket_name,
-            Prefix=prefix,
-            Delimiter="/"  # <- this groups by folder
-        )
+        paginator = s3_client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter="/")
 
         group_names = []
-        if "CommonPrefixes" in response:
-            for cp in response["CommonPrefixes"]:
+        for page in pages:
+            for cp in page.get("CommonPrefixes", []):
                 # strip the prefix part, keep only the folder name
                 folder = cp["Prefix"].split("/")[-2]
                 group_names.append(folder)
