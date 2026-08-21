@@ -22,6 +22,11 @@
         "id": "bp8-qd-GS",
         "prefix": "public_ds/bp8-qd-GS/",
         "status": "public"
+      },
+      {
+        "id": "TSHA-BP1",
+        "prefix": "public_ds/TSHA-BP1/",
+        "status": "development"
       }
     ],
     "upload": [
@@ -44,6 +49,11 @@
         "id": "bp8-qd-GS",
         "prefix": "upload/bp8-qd-GS/",
         "status": "public"
+      },
+      {
+        "id": "THSA-BP1",
+        "prefix": "upload/THSA-BP1/",
+        "status": "development"
       }
     ]
   }
