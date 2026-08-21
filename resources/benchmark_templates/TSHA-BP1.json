@@ -1,0 +1,67 @@
+{
+  "name": "TSHA-BP1",
+  "files": [
+    {
+      "name": "BL13M",
+      "content": "Time-series data",
+      "graph_type": "timeseries",
+      "list_of_receivers": [
+        "BL13M_gauge00001",
+        "BL13M_gauge00002",
+        "BL13M_gauge00003",
+        "BL13M_gauge00040",
+        "BL13M_gauge00100"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "depth",
+          "unit": "m",
+          "description": "depth"
+        },
+        {
+          "name": "surf",
+          "unit": "m",
+          "description": "surface"
+        }
+      ],
+      "prefix": "BL13M_gauge",
+      "file_type": "csv"
+    },
+    {
+      "name": "BL13M instant",
+      "content": "Time-series data",
+      "graph_type": "timeseries",
+      "list_of_receivers": [
+        "BL13M_instant_gauge00001",
+        "BL13M_instant_gauge00002",
+        "BL13M_instant_gauge00003",
+        "BL13M_instant_gauge00040",
+        "BL13M_instant_gauge00100"
+      ],
+      "var_list": [
+        {
+          "name": "t",
+          "unit": "s",
+          "description": "time"
+        },
+        {
+          "name": "depth",
+          "unit": "m",
+          "description": "depth"
+        },
+        {
+          "name": "surf",
+          "unit": "m",
+          "description": "surface"
+        }
+      ],
+      "prefix": "BL13M_instant_gauge",
+      "file_type": "csv"
+    }
+  ]
+}
