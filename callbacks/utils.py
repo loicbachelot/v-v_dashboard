@@ -283,21 +283,33 @@ def render_json(data):
 
 
 @memoize(timeout=3600)
-def get_benchmark_params(search):
-    """
-    Get benchmark parameters from metadata.
+def _get_benchmark_params_cached(bucket_name, template_key, object_revision):
+    """Fetch and parse a benchmark template cached for one S3 revision."""
+    response = s3_client.get_object(Bucket=bucket_name, Key=template_key)
+    template_content = response['Body'].read().decode('utf-8')
+    return json.loads(template_content)
 
-    Parameters:
-    """
+
+def get_benchmark_params(search):
+    """Get benchmark parameters, invalidating the cache after an S3 update."""
     benchmark_id = parse_benchmark_id(search)
+    bucket_name = 'benchmark-vv-data'
+    template_key = f"benchmark_templates/{benchmark_id}.json"
+
     try:
-        bucket_name = 'benchmark-vv-data'
-        template_key = f"benchmark_templates/{benchmark_id}.json"
-        # Fetch the JSON file from S3
-        response = s3_client.get_object(Bucket=bucket_name, Key=template_key)
-        template_content = response['Body'].read().decode('utf-8')
-        template = json.loads(template_content)
-        return template
+        metadata = s3_client.head_object(Bucket=bucket_name, Key=template_key)
+        last_modified = metadata["LastModified"].isoformat()
+        object_revision = (
+            metadata.get("VersionId"),
+            metadata.get("ETag"),
+            last_modified,
+            metadata.get("ContentLength"),
+        )
+        return _get_benchmark_params_cached(
+            bucket_name,
+            template_key,
+            object_revision,
+        )
     except Exception as e:
         raise ValueError(f"Error loading benchmark params: {e}") from e
 
