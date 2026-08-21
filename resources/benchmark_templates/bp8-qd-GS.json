@@ -96,7 +96,7 @@
         },
         {
           "name": "moment_density_rate",
-          "unit": "N/s",
+          "unit": "N*m/s",
           "description": "Moment density rate"
         }
       ],
