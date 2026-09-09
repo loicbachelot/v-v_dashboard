@@ -24,26 +24,34 @@ def convert_seconds_to_time(seconds):
     return years, days, hours, seconds
 
 
-def extract_header(file_header, prefix, content):
+def extract_header(file_header, prefix, file_name, content):
     if file_header is None:
         file_header = {}
 
     header_data = {}
-
     for line in content.splitlines():
         line = line.strip()
+        if not line:
+            # Allow blank lines before and within the comment header. The first
+            # non-comment, non-blank line still marks the start of file data.
+            continue
         if line.startswith("# File:"):
             continue
         if line.startswith("#"):
-            if '=' in line:
-                key, value = line[2:].strip().split('=', 1)
+            comment = line[1:].strip()
+            if '=' in comment:
+                key, value = comment.split('=', 1)
+                header_data[key.strip()] = value.strip()
+            elif ':' in comment:
+                key, value = comment.split(':', 1)
                 header_data[key.strip()] = value.strip()
             else:
-                header_data.setdefault("comments", []).append(line[2:].strip())
+                header_data.setdefault("comments", []).append(comment)
         else:
             break
 
-    file_header[prefix] = header_data
+    file_key = os.path.splitext(os.path.basename(file_name))[0]
+    file_header.setdefault(prefix, {})[file_key] = header_data
     return file_header
 
 
@@ -280,8 +288,12 @@ def process_zip(
                     with zip_obj.open(file_name) as file:
                         file_content = file.read().decode('utf-8')
 
-                        if prefix not in file_header:
-                            file_header = extract_header(file_header, prefix, file_content)
+                        file_header = extract_header(
+                            file_header,
+                            prefix,
+                            file_name,
+                            file_content,
+                        )
 
                         df = read_data_for_template(file_content, expected_structure)
                         var_list = expected_structure['var_list']
