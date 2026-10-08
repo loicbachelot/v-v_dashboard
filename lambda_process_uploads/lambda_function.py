@@ -234,6 +234,66 @@ def new_processing_summary():
     }
 
 
+def expand_template_files(template):
+    """Return upload-processing entries for legacy or compact source templates.
+
+    Legacy templates continue to supply ``files`` unchanged. Compact templates
+    may instead define shared file metadata once under ``source_series`` and
+    describe source/variant naming with format patterns.
+    """
+    if "files" in template:
+        return template["files"]
+
+    source_series = template.get("source_series")
+    if not isinstance(source_series, dict):
+        raise ValueError("Template must define either 'files' or 'source_series'.")
+
+    sources = source_series.get("sources")
+    gages = source_series.get("gages")
+    variants = source_series.get("variants")
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("source_series.sources must be a non-empty list.")
+    if not isinstance(gages, list) or not gages:
+        raise ValueError("source_series.gages must be a non-empty list.")
+    if not isinstance(variants, list) or not variants:
+        raise ValueError("source_series.variants must be a non-empty list.")
+
+    shared_fields = {
+        key: value
+        for key, value in source_series.items()
+        if key not in {"sources", "gages", "variants"}
+    }
+    for field in ("file_type", "var_list"):
+        if field not in shared_fields:
+            raise ValueError(f"source_series.{field} is required.")
+
+    expanded = []
+    for source in sources:
+        for variant in variants:
+            if not isinstance(variant, dict):
+                raise ValueError("Each source_series variant must be an object.")
+            try:
+                prefix = variant["prefix_pattern"].format(source=source)
+                receivers = [
+                    variant["receiver_pattern"].format(source=source, gage=gage)
+                    for gage in gages
+                ]
+            except (KeyError, AttributeError, ValueError) as exc:
+                raise ValueError(
+                    "Each source_series variant needs valid prefix_pattern and "
+                    "receiver_pattern format strings."
+                ) from exc
+
+            entry = dict(shared_fields)
+            entry.update({
+                "name": f"{source} {variant.get('name', '')}".strip(),
+                "prefix": prefix,
+                "list_of_receivers": receivers,
+            })
+            expanded.append(entry)
+    return expanded
+
+
 def process_zip(
     bucket_name,
     zip_key,
@@ -242,9 +302,10 @@ def process_zip(
     version,
     user_metadata=None,
     processing_summary=None,
+    output_folder=None,
     **kwargs,
 ):
-    output_folder = f"/tmp/{code_name}_{version}/"
+    output_folder = output_folder or f"/tmp/{code_name}_{version}/"
     os.makedirs(output_folder, exist_ok=True)
 
     summary = processing_summary if processing_summary is not None else new_processing_summary()
@@ -264,7 +325,7 @@ def process_zip(
 
     with zipfile.ZipFile(BytesIO(zip_obj['Body'].read())) as zip_obj:
         zip_file_list = zip_obj.namelist()
-        for file_info in template['files']:
+        for file_info in expand_template_files(template):
             prefix = file_info['prefix']
             file_type = file_info['file_type']
             expected_structure = file_info
