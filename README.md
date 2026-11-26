@@ -23,6 +23,32 @@ The platform is described in Bachelot et al. (2026), [*CRESCENT Earthquake Dynam
 
 ---
 
+## Offline TTPV metrics
+
+Place submission ZIPs in `resources/TTPV1_results` or `resources/TTPV2_results`.
+Run the exporter from the repository root with NumPy, pandas, SciPy, ObsPy and
+psutil installed in the local Python environment.
+
+```powershell
+python tools/export_misfit_metrics.py --benchmark ttpv1 --workers 2 --profile
+python tools/export_misfit_metrics.py --benchmark ttpv2 --workers 2 --profile
+```
+
+Each command produces `metrics.csv` alongside that benchmark's ZIPs. Publish
+it to `public_ds/<benchmark>/metrics.csv`. EG requires coverage of 0–240 s
+and uses a 0.01–5 Hz wavelet band. NRMSE requires coverage of 30–240 s.
+The exporter skips a pair for a metric if either receiver trace misses its
+window, allowing 0.00000001 s for timestamp roundoff. The profile lists the
+affected receiver traces. Use `--receiver NAME` to try one receiver.
+
+Keep the local score cache and source manifest beside the CSV. Repeat the
+same command after adding ZIPs or interrupting a run. Completed receiver
+comparisons are checkpointed and reused. To reuse historical wavelet
+envelopes across runs, pass e.g. `--envelope-cache-gib 4` on both the initial
+and later runs. This limits stored array payload to 4 GiB. SQLite metadata,
+free pages, and temporary journal space also use disk. Each profiled run
+writes a separate report.
+
 ## Architecture
 
 The Dash web app runs on **ECS Fargate** behind an **ALB**, exposes a small **API Gateway** endpoint for status checks, and invokes a **Lambda (container image)** during uploads. Data lives in an existing **S3 bucket** and **DynamoDB** table.
